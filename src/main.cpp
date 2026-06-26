@@ -7,7 +7,25 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <thread>
+
 using namespace std;
+
+void handleCLient( int client_fd){
+  char pingBuffer[1024];
+
+  while (true){
+    int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
+
+    if (PingBytesRecieved <= 0)
+      break;
+
+    const char *response = "+PONG\r\n";
+    send(client_fd, response, strlen(response), 0);
+
+  }
+  close(client_fd);
+}
 
 int main(int argc, char **argv)
 {
@@ -56,22 +74,17 @@ int main(int argc, char **argv)
 
   cout << "Logs from your program will appear here!\n";
 
-  int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+  
   cout << "Client connected\n";
 
-  char pingBuffer[1024];
-
-  while (true){
-    int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
-    
-    if (PingBytesRecieved <= 0) break;
-    
-    const char *response = "+PONG\r\n";
-    send(client_fd, response, strlen(response), 0);
+  while(true){
+    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+    thread t(handleCLient,client_fd);
+    t.detach();
   }
 
   close(server_fd);
-  close(client_fd);
+  
 
   return 0;
 }
