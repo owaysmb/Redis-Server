@@ -8,21 +8,50 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <thread>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+
 
 using namespace std;
 
-void handleCLient( int client_fd){
+void handleCLient(int client_fd)
+{
   char pingBuffer[1024];
+  vector<string> cmd;
 
-  while (true){
+  while (true)
+  {
     int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
 
     if (PingBytesRecieved <= 0)
       break;
 
-    const char *response = "+PONG\r\n";
-    send(client_fd, response, strlen(response), 0);
+    pingBuffer[PingBytesRecieved] = '\0';
+    string message(pingBuffer);
 
+    stringstream ss(message);
+    string word;
+
+    while (ss >> word) {
+      cmd.push_back(word);
+    }
+
+    if (cmd.empty())
+      continue;
+
+    if (cmd[0] == "ping" || cmd[0] == "PING")
+    {
+
+      const char *response = "+PONG\r\n";
+      send(client_fd, response, strlen(response), 0);
+    }
+    else if (cmd[0] == "ECHO" || cmd[0] == "echo"){
+      if (cmd.size() > 1){
+        string response = cmd[1];
+        send(client_fd, response.c_str(), response.size(), 0);
+      }
+    }
   }
   close(client_fd);
 }
@@ -74,17 +103,16 @@ int main(int argc, char **argv)
 
   cout << "Logs from your program will appear here!\n";
 
-  
   cout << "Client connected\n";
 
-  while(true){
+  while (true)
+  {
     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
-    thread t(handleCLient,client_fd);
+    thread t(handleCLient, client_fd);
     t.detach();
   }
 
   close(server_fd);
-  
 
   return 0;
 }
