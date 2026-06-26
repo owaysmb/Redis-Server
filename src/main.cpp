@@ -11,6 +11,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -43,13 +44,66 @@ vector<string> RESP_parse(const string &message)
     pos += newlength + 2;
   }
   return result;
-  
+}
+
+void handlePing(vector<string> &cmd, int client_fd)
+{
+  const char *response = "+PONG\r\n";
+  send(client_fd, response, strlen(response), 0);
+}
+
+void handleEcho(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() > 1)
+  {
+    string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+  }
+}
+
+map<string, string> Database;
+
+void handleSET(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() < 3) return;
+  Database[cmd[1]] = cmd[2];
+  const char *response = "+OK\r\n";
+  send(client_fd, response, strlen(response), 0);
+}
+
+void handleGET(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() < 2) return;
+  auto it = Database.find(cmd[1]);
+  if (it != Database.end()) {
+      string value = it->second;
+      string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+  } else {
+      const char *nullReply = "$-1\r\n";
+      send(client_fd, nullReply, strlen(nullReply), 0);
+  }
+}
+
+void handleCommand(vector<string> &cmd, int client_fd)
+{
+
+  if (cmd.empty())
+    return;
+
+  if (cmd[0] == "PING" || cmd[0] == "ping")
+    handlePing(cmd, client_fd);
+  else if (cmd[0] == "ECHO" || cmd[0] == "echo")
+    handleEcho(cmd, client_fd);
+  else if (cmd[0] == "SET" || cmd[0] == "set")
+    handleSET(cmd, client_fd);
+  else if (cmd[0] == "GET" || cmd[0] == "get")
+    handleGET(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
 {
   char pingBuffer[1024];
-  
 
   while (true)
   {
@@ -63,23 +117,7 @@ void handleCLient(int client_fd)
 
     vector<string> cmd = RESP_parse(message);
 
-    if (cmd.empty())
-      continue;
-
-    if (cmd[0] == "ping" || cmd[0] == "PING")
-    {
-
-      const char *response = "+PONG\r\n";
-      send(client_fd, response, strlen(response), 0);
-    }
-    else if (cmd[0] == "ECHO" || cmd[0] == "echo"){
-
-        if (cmd.size() > 1) {
-          string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
-          send(client_fd, reply.c_str(), reply.size(), 0);
-      }
-      
-    }
+    handleCommand(cmd, client_fd);
   }
   close(client_fd);
 }
