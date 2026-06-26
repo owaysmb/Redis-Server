@@ -12,13 +12,44 @@
 #include <sstream>
 #include <algorithm>
 
-
 using namespace std;
+
+vector<string> RESP_parse(const string &message)
+{
+
+  vector<string> result;
+  int pos = 0;
+
+  if (message[pos] != '*')
+    return result;
+
+  pos++;
+
+  int ElementsN = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
+  pos = message.find("\r\n", pos) + 2;
+
+  for (int i = 0; i < ElementsN; i++)
+  {
+    if (message[pos] != '$')
+      break;
+    pos++;
+
+    int newlength = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
+    pos = message.find("\r\n", pos) + 2;
+
+    string word = message.substr(pos, newlength);
+    result.push_back(word);
+
+    pos += newlength + 2;
+  }
+  return result;
+  
+}
 
 void handleCLient(int client_fd)
 {
   char pingBuffer[1024];
-  vector<string> cmd;
+  
 
   while (true)
   {
@@ -30,12 +61,7 @@ void handleCLient(int client_fd)
     pingBuffer[PingBytesRecieved] = '\0';
     string message(pingBuffer);
 
-    stringstream ss(message);
-    string word;
-
-    while (ss >> word) {
-      cmd.push_back(word);
-    }
+    vector<string> cmd = RESP_parse(message);
 
     if (cmd.empty())
       continue;
@@ -47,10 +73,12 @@ void handleCLient(int client_fd)
       send(client_fd, response, strlen(response), 0);
     }
     else if (cmd[0] == "ECHO" || cmd[0] == "echo"){
-      if (cmd.size() > 1){
-        string response = cmd[1];
-        send(client_fd, response.c_str(), response.size(), 0);
+
+        if (cmd.size() > 1) {
+          string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
+          send(client_fd, reply.c_str(), reply.size(), 0);
       }
+      
     }
   }
   close(client_fd);
