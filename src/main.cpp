@@ -12,8 +12,11 @@
 #include <sstream>
 #include <algorithm>
 #include <map>
+#include <chrono>
 
 using namespace std;
+map<string, chrono::steady_clock::time_point> ExpiryTimes;
+map<string, string> Database;
 
 vector<string> RESP_parse(const string &message)
 {
@@ -61,11 +64,28 @@ void handleEcho(vector<string> &cmd, int client_fd)
   }
 }
 
-map<string, string> Database;
+
 
 void handleSET(vector<string> &cmd, int client_fd)
 {
-  if (cmd.size() < 3) return;
+  if (cmd.size() < 3)
+    return;
+
+  string key = cmd[1];
+  string value = cmd[2];
+  ExpiryTimes.erase(key);
+
+  if (cmd.size() >= 5) {
+      if (cmd[3] == "EX" || cmd[3] == "ex") {
+          long seconds = stol(cmd[4]);
+          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::seconds(seconds);
+      }
+      else if (cmd[3] == "PX" || cmd[3] == "px") {
+          long millis = stol(cmd[4]);
+          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
+      }
+  }
+
   Database[cmd[1]] = cmd[2];
   const char *response = "+OK\r\n";
   send(client_fd, response, strlen(response), 0);
@@ -73,15 +93,19 @@ void handleSET(vector<string> &cmd, int client_fd)
 
 void handleGET(vector<string> &cmd, int client_fd)
 {
-  if (cmd.size() < 2) return;
+  if (cmd.size() < 2)
+    return;
   auto it = Database.find(cmd[1]);
-  if (it != Database.end()) {
-      string value = it->second;
-      string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
-      send(client_fd, reply.c_str(), reply.size(), 0);
-  } else {
-      const char *nullReply = "$-1\r\n";
-      send(client_fd, nullReply, strlen(nullReply), 0);
+  if (it != Database.end())
+  {
+    string value = it->second;
+    string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+  }
+  else
+  {
+    const char *nullReply = "$-1\r\n";
+    send(client_fd, nullReply, strlen(nullReply), 0);
   }
 }
 
