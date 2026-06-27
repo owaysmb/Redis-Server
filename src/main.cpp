@@ -121,6 +121,7 @@ void handleGET(vector<string> &cmd, int client_fd)
 }
 
 void handleRPUSH(vector<string> &cmd, int client_fd)
+
 {
 
   if (cmd.size() < 3)
@@ -139,6 +140,7 @@ void handleRPUSH(vector<string> &cmd, int client_fd)
   string reply = ":" + to_string(response) + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
 }
+
 void handleLPUSH(vector<string> &cmd, int client_fd)
 {
 
@@ -209,6 +211,24 @@ void handleLRANGE(vector<string> &cmd, int client_fd)
   send(client_fd, reply.c_str(), reply.size(), 0);
 }
 
+void handleLLEN(vector<string> &cmd, int client_fd)
+{
+
+  if (cmd.size() < 2)
+    return;
+
+  string key = cmd[1];
+  auto it = List.find(key);
+
+  int length = 0;
+
+  if (it != List.end()) {
+    length = it->second.size();
+  }
+  string reply = ":" + to_string(length) + "\r\n";
+  send(client_fd, reply.c_str(), reply.size(), 0);
+}
+
 void handleCommand(vector<string> &cmd, int client_fd)
 {
 
@@ -227,8 +247,10 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleRPUSH(cmd, client_fd);
   else if (cmd[0] == "LPUSH" || cmd[0] == "LPUSH")
     handleLPUSH(cmd, client_fd);
-  else if (cmd[0] == "LRANGE" | cmd[0] == "lrange")
+  else if (cmd[0] == "LRANGE" || cmd[0] == "lrange")
     handleLRANGE(cmd, client_fd);
+  else if(cmd[0] == "LLEN" || cmd[0] == "llen")
+    handleLLEN(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
