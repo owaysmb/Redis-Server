@@ -125,7 +125,7 @@ void handleList(vector<string> &cmd,int client_fd){
 
   List[key].push_back(value);
   int response = List[key].size();
-  
+
   string reply = ":" + to_string(response) + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
 
@@ -146,6 +146,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleSET(cmd, client_fd);
   else if (cmd[0] == "GET" || cmd[0] == "get")
     handleGET(cmd, client_fd);
+  else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
+    handleList(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
