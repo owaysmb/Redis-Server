@@ -17,6 +17,7 @@
 using namespace std;
 map<string, chrono::steady_clock::time_point> ExpiryTimes;
 map<string, string> Database;
+map<string,vector<string> > List;
 
 vector<string> RESP_parse(const string &message)
 {
@@ -64,8 +65,6 @@ void handleEcho(vector<string> &cmd, int client_fd)
   }
 }
 
-
-
 void handleSET(vector<string> &cmd, int client_fd)
 {
   if (cmd.size() < 3)
@@ -95,7 +94,7 @@ void handleGET(vector<string> &cmd, int client_fd)
 {
   if (cmd.size() < 2)
     return;
-    
+
   string key = cmd[1];
   auto expiryIt = ExpiryTimes.find(key);
   if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second) {
@@ -103,7 +102,7 @@ void handleGET(vector<string> &cmd, int client_fd)
       ExpiryTimes.erase(key);
   }
 
-  auto it = Database.find(cmd[1]);
+  auto it = Database.find(key);
   if (it != Database.end())
   {
     string value = it->second;
@@ -116,6 +115,22 @@ void handleGET(vector<string> &cmd, int client_fd)
     send(client_fd, nullReply, strlen(nullReply), 0);
   }
 }
+
+void handleList(vector<string> &cmd,int client_fd){
+
+  if (cmd.size() < 3) return;
+
+  string key = cmd[1];
+  string value = cmd[2];
+
+  List[key].push_back(value);
+  int response = List[key].size();
+  
+  string reply = ":" + to_string(response) + "\r\n";
+  send(client_fd, reply.c_str(), reply.size(), 0);
+
+}
+
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
