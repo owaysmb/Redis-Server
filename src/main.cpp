@@ -121,9 +121,15 @@ void handleList(vector<string> &cmd,int client_fd){
   if (cmd.size() < 3) return;
 
   string key = cmd[1];
-  string value = cmd[2];
+  
 
-  List[key].push_back(value);
+  for (int i = 2; i < cmd.size(); i++){
+    string value = cmd[i];
+    List[key].push_back(value);
+  }
+  
+
+  
   int response = List[key].size();
 
   string reply = ":" + to_string(response) + "\r\n";
