@@ -147,10 +147,10 @@ void handleLPUSH(vector<string> &cmd, int client_fd)
 
   string key = cmd[1];
 
-  for (int i = cmd.size() - 1; i > 1; i--)
+  for (int i = 2; i > cmd.size(); i++)
   {
     string value = cmd[i];
-    List[key].push_back(value);
+    List[key].insert(List[key].begin(), value);
   }
 
   int response = List[key].size();
@@ -225,8 +225,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleGET(cmd, client_fd);
   else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
     handleRPUSH(cmd, client_fd);
-  else if (cmd[0] =="LPUSH" || cmd[0] == "LPUSH")
-    handleLPUSH(cmd,client_fd);
+  else if (cmd[0] == "LPUSH" || cmd[0] == "LPUSH")
+    handleLPUSH(cmd, client_fd);
   else if (cmd[0] == "LRANGE" | cmd[0] == "lrange")
     handleLRANGE(cmd, client_fd);
 }
