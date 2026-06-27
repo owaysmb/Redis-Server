@@ -172,7 +172,7 @@ void handleLRANGE(vector<string> &cmd, int client_fd)
     send(client_fd, emptyArray, strlen(emptyArray), 0);
     return;
   }
-
+  if (start < 0) start = 0;  
   vector<string> result;
 
   for (int i = start; i <= stop; i++)
