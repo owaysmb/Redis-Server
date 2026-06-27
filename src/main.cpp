@@ -200,6 +200,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleGET(cmd, client_fd);
   else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
     handleRPUSH(cmd, client_fd);
+    else if(cmd[0] == "LRANGE" | cmd[0] == "lrange")
+    handleLRANGE(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
