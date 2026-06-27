@@ -17,7 +17,7 @@
 using namespace std;
 map<string, chrono::steady_clock::time_point> ExpiryTimes;
 map<string, string> Database;
-map<string,vector<string> > List;
+map<string, vector<string>> List;
 
 vector<string> RESP_parse(const string &message)
 {
@@ -74,15 +74,18 @@ void handleSET(vector<string> &cmd, int client_fd)
   string value = cmd[2];
   ExpiryTimes.erase(key);
 
-  if (cmd.size() >= 5) {
-      if (cmd[3] == "EX" || cmd[3] == "ex") {
-          long seconds = stol(cmd[4]);
-          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::seconds(seconds);
-      }
-      else if (cmd[3] == "PX" || cmd[3] == "px") {
-          long millis = stol(cmd[4]);
-          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
-      }
+  if (cmd.size() >= 5)
+  {
+    if (cmd[3] == "EX" || cmd[3] == "ex")
+    {
+      long seconds = stol(cmd[4]);
+      ExpiryTimes[key] = chrono::steady_clock::now() + chrono::seconds(seconds);
+    }
+    else if (cmd[3] == "PX" || cmd[3] == "px")
+    {
+      long millis = stol(cmd[4]);
+      ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
+    }
   }
 
   Database[cmd[1]] = cmd[2];
@@ -97,9 +100,10 @@ void handleGET(vector<string> &cmd, int client_fd)
 
   string key = cmd[1];
   auto expiryIt = ExpiryTimes.find(key);
-  if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second) {
-      Database.erase(key);
-      ExpiryTimes.erase(key);
+  if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second)
+  {
+    Database.erase(key);
+    ExpiryTimes.erase(key);
   }
 
   auto it = Database.find(key);
@@ -116,27 +120,69 @@ void handleGET(vector<string> &cmd, int client_fd)
   }
 }
 
-void handleList(vector<string> &cmd,int client_fd){
+void handleRPUSH(vector<string> &cmd, int client_fd)
+{
 
-  if (cmd.size() < 3) return;
+  if (cmd.size() < 3)
+    return;
 
   string key = cmd[1];
-  
 
-  for (int i = 2; i < cmd.size(); i++){
+  for (int i = 2; i < cmd.size(); i++)
+  {
     string value = cmd[i];
     List[key].push_back(value);
   }
-  
 
-  
   int response = List[key].size();
 
   string reply = ":" + to_string(response) + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
-
 }
 
+void handleLRANGE(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() < 4) return;
+
+  string key = cmd[1];
+  
+
+  auto it = List.find(key);
+    if (it == List.end()) {
+        const char *emptyArray = "*0\r\n";
+        send(client_fd, emptyArray, strlen(emptyArray), 0);
+        return;
+    }
+
+  vector<string>& items = it->second;
+  int start = stoi(cmd[2]);
+  int stop = stoi(cmd[3]);
+
+  if (start < 0) start = 0;
+  if (stop >= (int)items.size()) stop = items.size() - 1;
+
+  if (start > stop || items.empty()) {
+      const char *emptyArray = "*0\r\n";
+      send(client_fd, emptyArray, strlen(emptyArray), 0);
+      return;
+  }
+
+  vector<string> result;
+
+  for (int i = start; i <= stop; i++) {
+      result.push_back(items[i]);
+  }
+
+  string reply = "*" + to_string(result.size()) + "\r\n";
+  for (auto &val : result) {
+      reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+  }
+
+  send(client_fd, reply.c_str(), reply.size(), 0);
+  
+
+
+}
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -153,7 +199,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
   else if (cmd[0] == "GET" || cmd[0] == "get")
     handleGET(cmd, client_fd);
   else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
-    handleList(cmd,client_fd);
+    handleRPUSH(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
