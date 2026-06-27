@@ -147,7 +147,7 @@ void handleLPUSH(vector<string> &cmd, int client_fd)
 
   string key = cmd[1];
 
-  for (int i = 2; i > cmd.size(); i++)
+  for (int i = 2; i < cmd.size(); i++)
   {
     string value = cmd[i];
     List[key].insert(List[key].begin(), value);
