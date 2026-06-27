@@ -95,6 +95,14 @@ void handleGET(vector<string> &cmd, int client_fd)
 {
   if (cmd.size() < 2)
     return;
+    
+  string key = cmd[1];
+  auto expiryIt = ExpiryTimes.find(key);
+  if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second) {
+      Database.erase(key);
+      ExpiryTimes.erase(key);
+  }
+
   auto it = Database.find(cmd[1]);
   if (it != Database.end())
   {
