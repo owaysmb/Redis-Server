@@ -142,46 +142,51 @@ void handleRPUSH(vector<string> &cmd, int client_fd)
 
 void handleLRANGE(vector<string> &cmd, int client_fd)
 {
-  if (cmd.size() < 4) return;
+  if (cmd.size() < 4)
+    return;
 
   string key = cmd[1];
-  
 
   auto it = List.find(key);
-    if (it == List.end()) {
-        const char *emptyArray = "*0\r\n";
-        send(client_fd, emptyArray, strlen(emptyArray), 0);
-        return;
-    }
+  if (it == List.end())
+  {
+    const char *emptyArray = "*0\r\n";
+    send(client_fd, emptyArray, strlen(emptyArray), 0);
+    return;
+  }
 
-  vector<string>& items = it->second;
+  vector<string> &items = it->second;
   int start = stoi(cmd[2]);
   int stop = stoi(cmd[3]);
 
-  if (start < 0) start = 0;
-  if (stop >= (int)items.size()) stop = items.size() - 1;
+  if (start < 0)
+    start = items.size() + start;
+  if (stop < 0)
+    stop = items.size() + stop;
+  if (stop >= (int)items.size())
+    stop = items.size() - 1;
 
-  if (start > stop || items.empty()) {
-      const char *emptyArray = "*0\r\n";
-      send(client_fd, emptyArray, strlen(emptyArray), 0);
-      return;
+  if (start > stop || items.empty())
+  {
+    const char *emptyArray = "*0\r\n";
+    send(client_fd, emptyArray, strlen(emptyArray), 0);
+    return;
   }
 
   vector<string> result;
 
-  for (int i = start; i <= stop; i++) {
-      result.push_back(items[i]);
+  for (int i = start; i <= stop; i++)
+  {
+    result.push_back(items[i]);
   }
 
   string reply = "*" + to_string(result.size()) + "\r\n";
-  for (auto &val : result) {
-      reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+  for (auto &val : result)
+  {
+    reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
   }
 
   send(client_fd, reply.c_str(), reply.size(), 0);
-  
-
-
 }
 
 void handleCommand(vector<string> &cmd, int client_fd)
@@ -200,8 +205,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleGET(cmd, client_fd);
   else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
     handleRPUSH(cmd, client_fd);
-    else if(cmd[0] == "LRANGE" | cmd[0] == "lrange")
-    handleLRANGE(cmd,client_fd);
+  else if (cmd[0] == "LRANGE" | cmd[0] == "lrange")
+    handleLRANGE(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
