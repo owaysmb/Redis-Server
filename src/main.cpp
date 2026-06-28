@@ -278,7 +278,8 @@ void handleLPOP(vector<string> &cmd, int client_fd)
 
 void handleBLPOP(vector<string> &cmd, int client_fd)
 {
-    if (cmd.size() < 3) return;
+    if (cmd.size() < 3)
+        return;
 
     string key = cmd[1];
     int timeoutSeconds = stoi(cmd[2]) > 0 ? stoi(cmd[2]) : 1;
