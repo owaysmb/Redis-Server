@@ -13,11 +13,15 @@
 #include <algorithm>
 #include <map>
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 using namespace std;
 map<string, chrono::steady_clock::time_point> ExpiryTimes;
 map<string, string> Database;
 map<string, vector<string>> List;
+mutex mtx;
+condition_variable cv;
 
 vector<string> RESP_parse(const string &message)
 {
@@ -133,6 +137,7 @@ void handleRPUSH(vector<string> &cmd, int client_fd)
   {
     string value = cmd[i];
     List[key].push_back(value);
+    cv.notify_one();
   }
 
   int response = List[key].size();
@@ -153,6 +158,7 @@ void handleLPUSH(vector<string> &cmd, int client_fd)
   {
     string value = cmd[i];
     List[key].insert(List[key].begin(), value);
+    cv.notify_one();
   }
 
   int response = List[key].size();
@@ -236,37 +242,67 @@ void handleLPOP(vector<string> &cmd, int client_fd)
     return;
 
   string key = cmd[1];
-  string result = ""; 
+  string result = "";
   auto it = List.find(key);
 
-  if(cmd.size() == 3 && it != List.end()){
+  if (cmd.size() == 3 && it != List.end())
+  {
     string elements = cmd[2];
     vector<string> result2;
-    
-    for (int i = 0; i < stoi(elements); i++){
-        result2.push_back(List[key][0]);
-        List[key].erase(List[key].begin());  
+
+    for (int i = 0; i < stoi(elements); i++)
+    {
+      result2.push_back(List[key][0]);
+      List[key].erase(List[key].begin());
     }
-    
-  string reply = "*" + to_string(result2.size()) + "\r\n";
-  for (auto &val : result2)
+
+    string reply = "*" + to_string(result2.size()) + "\r\n";
+    for (auto &val : result2)
+    {
+      reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+    }
+
+    send(client_fd, reply.c_str(), reply.size(), 0);
+    return;
+  }
+
+  if (it != List.end() && cmd.size() == 2)
   {
-    reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
-  }
-
-  send(client_fd, reply.c_str(), reply.size(), 0);
-  return ;
-  }
-  
-
-  
-  if (it != List.end() && cmd.size() == 2){
     result = List[key][0];
     List[key].erase(List[key].begin());
   }
 
   string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
+}
+
+void handleBLPOP(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() < 3)
+    return;
+  unique_lock<mutex> lock(mtx);
+  string key = cmd[1];
+
+  auto it = List.find(key);
+  if (it != List.end())
+  {
+
+    if (List[key].size() > 0)
+    {
+      string result = List[key][0];
+      List[key].erase(List[key].begin());
+      string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+    else
+    {
+      cv.wait_for(lock, chrono::seconds(stoi(cmd[2]) > 0 ? stoi(cmd[2]) : 1), [&]()
+      { return List.find(key) != List.end() && !List[key].empty(); });
+    }
+  }else {
+    const char *timeoutReply = "*-1\r\n";
+    send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+  }
 }
 
 void handleCommand(vector<string> &cmd, int client_fd)
@@ -298,7 +334,6 @@ void handleCommand(vector<string> &cmd, int client_fd)
 void handleCLient(int client_fd)
 {
   char pingBuffer[1024];
-
   while (true)
   {
     int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
