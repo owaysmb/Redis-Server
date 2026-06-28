@@ -230,19 +230,22 @@ void handleLLEN(vector<string> &cmd, int client_fd)
   send(client_fd, reply.c_str(), reply.size(), 0);
 }
 
-void handleLPOP(vector<string> &cmd, int client_fd){
-  if(cmd.size() < 2) return;
+void handleLPOP(vector<string> &cmd, int client_fd)
+{
+  if (cmd.size() < 2)
+    return;
 
   string key = cmd[1];
   string result = "";
 
   auto it = List.find(key);
-  if(it != List.end()){
+  if (it != List.end())
+  {
     result = List[key][0];
     List[key].erase(List[key].begin());
   }
 
-  string reply = "$" + result + "\r\n";
+  string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
 }
 
@@ -268,8 +271,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleLRANGE(cmd, client_fd);
   else if (cmd[0] == "LLEN" || cmd[0] == "llen")
     handleLLEN(cmd, client_fd);
-  else if(cmd[0] == "LPOP" || cmd[0] == "lpop")
-    handleLPOP(cmd,client_fd );
+  else if (cmd[0] == "LPOP" || cmd[0] == "lpop")
+    handleLPOP(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
