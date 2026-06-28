@@ -329,6 +329,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     handleLLEN(cmd, client_fd);
   else if (cmd[0] == "LPOP" || cmd[0] == "lpop")
     handleLPOP(cmd, client_fd);
+  else if(cmd[0] == "BLPOP" || cmd[0] == "blpop")
+    handleBLPOP(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
