@@ -294,7 +294,11 @@ void handleBLPOP(vector<string> &cmd, int client_fd)
     if (found) {
         string result = List[key][0];
         List[key].erase(List[key].begin());
-        string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+
+        string reply = "*2\r\n";
+        reply += "$" + to_string(key.size()) + "\r\n" + key + "\r\n";
+        reply += "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+
         send(client_fd, reply.c_str(), reply.size(), 0);
     } else {
         const char *timeoutReply = "*-1\r\n";
