@@ -278,31 +278,27 @@ void handleLPOP(vector<string> &cmd, int client_fd)
 
 void handleBLPOP(vector<string> &cmd, int client_fd)
 {
-  if (cmd.size() < 3)
-    return;
-  unique_lock<mutex> lock(mtx);
-  string key = cmd[1];
+    if (cmd.size() < 3) return;
 
-  auto it = List.find(key);
-  if (it != List.end())
-  {
+    string key = cmd[1];
+    int timeoutSeconds = stoi(cmd[2]) > 0 ? stoi(cmd[2]) : 1;
 
-    if (List[key].size() > 0)
-    {
-      string result = List[key][0];
-      List[key].erase(List[key].begin());
-      string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
-      send(client_fd, reply.c_str(), reply.size(), 0);
+    unique_lock<mutex> lock(mtx);
+
+    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]() {
+        auto it = List.find(key);
+        return it != List.end() && !it->second.empty();
+    });
+
+    if (found) {
+        string result = List[key][0];
+        List[key].erase(List[key].begin());
+        string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    } else {
+        const char *timeoutReply = "*-1\r\n";
+        send(client_fd, timeoutReply, strlen(timeoutReply), 0);
     }
-    else
-    {
-      cv.wait_for(lock, chrono::seconds(stoi(cmd[2]) > 0 ? stoi(cmd[2]) : 1), [&]()
-      { return List.find(key) != List.end() && !List[key].empty(); });
-    }
-  }else {
-    const char *timeoutReply = "*-1\r\n";
-    send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-  }
 }
 
 void handleCommand(vector<string> &cmd, int client_fd)
