@@ -242,7 +242,7 @@ void handleLPOP(vector<string> &cmd, int client_fd){
     List[key].erase(List[key].begin());
   }
 
-  string reply = result;
+  string reply = "$" + result + "\r\n";
   send(client_fd, reply.c_str(), reply.size(), 0);
 }
 
