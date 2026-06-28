@@ -255,7 +255,7 @@ void handleLPOP(vector<string> &cmd, int client_fd)
   }
 
   send(client_fd, reply.c_str(), reply.size(), 0);
-
+  return ;
   }
   
 
