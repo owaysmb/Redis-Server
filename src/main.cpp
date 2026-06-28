@@ -236,11 +236,31 @@ void handleLPOP(vector<string> &cmd, int client_fd)
     return;
 
   string key = cmd[1];
-  string result = "";
-
+  string result = ""; 
   auto it = List.find(key);
-  if (it != List.end())
+
+  if(cmd.size() == 3 && it != List.end()){
+    string elements = cmd[2];
+    vector<string> result2;
+    
+    for (int i = 0; i < stoi(elements); i++){
+        result2.push_back(List[key][0]);
+        List[key].erase(List[key].begin());  
+    }
+    
+  string reply = "*" + to_string(result2.size()) + "\r\n";
+  for (auto &val : result2)
   {
+    reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+  }
+
+  send(client_fd, reply.c_str(), reply.size(), 0);
+
+  }
+  
+
+  
+  if (it != List.end() && cmd.size() == 2){
     result = List[key][0];
     List[key].erase(List[key].begin());
   }
