@@ -322,10 +322,12 @@ class ListStorage{
         auto it = Database.find(key);
         string result = "";
 
-        if(it != Database.end())
+        if(it != Database.end()){
           result = "string";
-        else 
+        }else {
           result = "none";
+        }
+          
 
         string reply = "+" + result + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
