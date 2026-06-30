@@ -367,6 +367,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleLPOP(cmd, client_fd);
   else if (cmd[0] == "BLPOP" || cmd[0] == "blpop")
     storage.handleBLPOP(cmd, client_fd);
+  else if(cmd[0] == "TYPE" || cmd[0] == "type")
+    storage.handleTYPE(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
