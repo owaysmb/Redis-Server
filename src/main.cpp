@@ -15,6 +15,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
+#include <unordered_map>
 
 using namespace std;
 
@@ -52,9 +53,10 @@ vector<string> RESP_parse(const string &message)
 class ListStorage
 {
 private:
-  map<string, chrono::steady_clock::time_point> ExpiryTimes;
-  map<string, string> Database;
-  map<string, vector<string>> List;
+  unordered_map<string, chrono::steady_clock::time_point> ExpiryTimes;
+  unordered_map<string, string> Database;
+  unordered_map<string, vector<string>> List;
+  map<string, vector<pair<string, map<string, string>>>> Streams;
   mutex mtx;
   condition_variable cv;
 
@@ -337,6 +339,28 @@ public:
     string reply = "+" + result + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
   }
+
+  void handleXADD(vector<string> &cmd, int client_fd)
+  {
+    if (cmd.size() < 5)
+      return;
+
+    string streamKey = cmd[1];
+    string ID = cmd[2];
+    map<string,string> TempMap;
+
+    
+    for (int i = 3; i < cmd.size() - 1; i+=2)
+    {
+
+      TempMap[cmd[i]] = cmd[i+1];
+
+    }
+    Streams[streamKey].push_back({ID,TempMap});
+
+    string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+  }
 };
 
 ListStorage storage;
@@ -367,8 +391,10 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleLPOP(cmd, client_fd);
   else if (cmd[0] == "BLPOP" || cmd[0] == "blpop")
     storage.handleBLPOP(cmd, client_fd);
-  else if(cmd[0] == "TYPE" || cmd[0] == "type")
-    storage.handleTYPE(cmd,client_fd);
+  else if (cmd[0] == "TYPE" || cmd[0] == "type")
+    storage.handleTYPE(cmd, client_fd);
+  else if (cmd[0] == "XADD" || cmd[0] == "xadd")
+    storage.handleXADD(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
@@ -391,7 +417,7 @@ void handleCLient(int client_fd)
   close(client_fd);
 }
 
-int main(int argc, char **argv)
+int main()
 {
 
   cout << unitbuf;
