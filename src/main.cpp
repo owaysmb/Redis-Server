@@ -347,7 +347,11 @@ public:
     string streamKey = cmd[1];
     string ID = cmd[2];
     map<string, string> TempMap;
-
+    if (ID == "0-0") {
+        string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+        return;
+    }
     for (int i = 3; i < cmd.size() - 1; i += 2)
     {
 
