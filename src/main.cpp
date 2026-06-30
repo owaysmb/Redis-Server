@@ -17,11 +17,7 @@
 #include <mutex>
 
 using namespace std;
-map<string, chrono::steady_clock::time_point> ExpiryTimes;
-map<string, string> Database;
-map<string, vector<string>> List;
-mutex mtx;
-condition_variable cv;
+
 
 vector<string> RESP_parse(const string &message)
 {
@@ -54,257 +50,290 @@ vector<string> RESP_parse(const string &message)
   return result;
 }
 
-void handlePing(vector<string> &cmd, int client_fd)
-{
-  const char *response = "+PONG\r\n";
-  send(client_fd, response, strlen(response), 0);
-}
-
-void handleEcho(vector<string> &cmd, int client_fd)
-{
-  if (cmd.size() > 1)
-  {
-    string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
-    send(client_fd, reply.c_str(), reply.size(), 0);
-  }
-}
-
-void handleSET(vector<string> &cmd, int client_fd)
-{
-  if (cmd.size() < 3)
-    return;
-
-  string key = cmd[1];
-  string value = cmd[2];
-  ExpiryTimes.erase(key);
-
-  if (cmd.size() >= 5)
-  {
-    if (cmd[3] == "EX" || cmd[3] == "ex")
+class ListStorage{
+  private:
+    map<string, chrono::steady_clock::time_point> ExpiryTimes;
+    map<string, string> Database;
+    map<string, vector<string>> List;
+    mutex mtx;
+    condition_variable cv;
+  public:
+    void handlePing(vector<string> &cmd, int client_fd)
     {
-      long seconds = stol(cmd[4]);
-      ExpiryTimes[key] = chrono::steady_clock::now() + chrono::seconds(seconds);
-    }
-    else if (cmd[3] == "PX" || cmd[3] == "px")
-    {
-      long millis = stol(cmd[4]);
-      ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
-    }
-  }
-
-  Database[cmd[1]] = cmd[2];
-  const char *response = "+OK\r\n";
-  send(client_fd, response, strlen(response), 0);
-}
-
-void handleGET(vector<string> &cmd, int client_fd)
-{
-  if (cmd.size() < 2)
-    return;
-
-  string key = cmd[1];
-  auto expiryIt = ExpiryTimes.find(key);
-  if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second)
-  {
-    Database.erase(key);
-    ExpiryTimes.erase(key);
-  }
-
-  auto it = Database.find(key);
-  if (it != Database.end())
-  {
-    string value = it->second;
-    string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
-    send(client_fd, reply.c_str(), reply.size(), 0);
-  }
-  else
-  {
-    const char *nullReply = "$-1\r\n";
-    send(client_fd, nullReply, strlen(nullReply), 0);
-  }
-}
-
-void handleRPUSH(vector<string> &cmd, int client_fd)
-
-{
-
-  if (cmd.size() < 3)
-    return;
-
-  string key = cmd[1];
-
-  for (int i = 2; i < cmd.size(); i++)
-  {
-    string value = cmd[i];
-    List[key].push_back(value);
-    cv.notify_one();
-  }
-
-  int response = List[key].size();
-
-  string reply = ":" + to_string(response) + "\r\n";
-  send(client_fd, reply.c_str(), reply.size(), 0);
-}
-
-void handleLPUSH(vector<string> &cmd, int client_fd)
-{
-
-  if (cmd.size() < 3)
-    return;
-
-  string key = cmd[1];
-
-  for (int i = 2; i < cmd.size(); i++)
-  {
-    string value = cmd[i];
-    List[key].insert(List[key].begin(), value);
-    cv.notify_one();
-  }
-
-  int response = List[key].size();
-
-  string reply = ":" + to_string(response) + "\r\n";
-  send(client_fd, reply.c_str(), reply.size(), 0);
-}
-
-void handleLRANGE(vector<string> &cmd, int client_fd)
-{
-  if (cmd.size() < 4)
-    return;
-
-  string key = cmd[1];
-
-  auto it = List.find(key);
-  if (it == List.end())
-  {
-    const char *emptyArray = "*0\r\n";
-    send(client_fd, emptyArray, strlen(emptyArray), 0);
-    return;
-  }
-
-  vector<string> &items = it->second;
-  int start = stoi(cmd[2]);
-  int stop = stoi(cmd[3]);
-
-  if (start < 0)
-    start = items.size() + start;
-  if (stop < 0)
-    stop = items.size() + stop;
-  if (stop >= (int)items.size())
-    stop = items.size() - 1;
-
-  if (start > stop || items.empty())
-  {
-    const char *emptyArray = "*0\r\n";
-    send(client_fd, emptyArray, strlen(emptyArray), 0);
-    return;
-  }
-  if (start < 0)
-    start = 0;
-  vector<string> result;
-
-  for (int i = start; i <= stop; i++)
-  {
-    result.push_back(items[i]);
-  }
-
-  string reply = "*" + to_string(result.size()) + "\r\n";
-  for (auto &val : result)
-  {
-    reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
-  }
-
-  send(client_fd, reply.c_str(), reply.size(), 0);
-}
-
-void handleLLEN(vector<string> &cmd, int client_fd)
-{
-
-  if (cmd.size() < 2)
-    return;
-
-  string key = cmd[1];
-  auto it = List.find(key);
-
-  int length = 0;
-
-  if (it != List.end())
-  {
-    length = it->second.size();
-  }
-  string reply = ":" + to_string(length) + "\r\n";
-  send(client_fd, reply.c_str(), reply.size(), 0);
-}
-
-void handleLPOP(vector<string> &cmd, int client_fd)
-{
-  if (cmd.size() < 2)
-    return;
-
-  string key = cmd[1];
-  string result = "";
-  auto it = List.find(key);
-
-  if (cmd.size() == 3 && it != List.end())
-  {
-    string elements = cmd[2];
-    vector<string> result2;
-
-    for (int i = 0; i < stoi(elements); i++)
-    {
-      result2.push_back(List[key][0]);
-      List[key].erase(List[key].begin());
+      const char *response = "+PONG\r\n";
+      send(client_fd, response, strlen(response), 0);
     }
 
-    string reply = "*" + to_string(result2.size()) + "\r\n";
-    for (auto &val : result2)
+    void handleEcho(vector<string> &cmd, int client_fd)
     {
-      reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+      if (cmd.size() > 1)
+      {
+        string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      }
     }
 
-    send(client_fd, reply.c_str(), reply.size(), 0);
-    return;
-  }
-
-  if (it != List.end() && cmd.size() == 2)
-  {
-    result = List[key][0];
-    List[key].erase(List[key].begin());
-  }
-
-  string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
-  send(client_fd, reply.c_str(), reply.size(), 0);
-}
-
-void handleBLPOP(vector<string> &cmd, int client_fd)
-{
-    if (cmd.size() < 3)
+    void handleSET(vector<string> &cmd, int client_fd)
+    {
+      if (cmd.size() < 3)
         return;
+
+      string key = cmd[1];
+      string value = cmd[2];
+      ExpiryTimes.erase(key);
+
+      if (cmd.size() >= 5)
+      {
+        if (cmd[3] == "EX" || cmd[3] == "ex")
+        {
+          long seconds = stol(cmd[4]);
+          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::seconds(seconds);
+        }
+        else if (cmd[3] == "PX" || cmd[3] == "px")
+        {
+          long millis = stol(cmd[4]);
+          ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
+        }
+      }
+
+      Database[cmd[1]] = cmd[2];
+      const char *response = "+OK\r\n";
+      send(client_fd, response, strlen(response), 0);
+    }
+
+    void handleGET(vector<string> &cmd, int client_fd)
+    {
+      if (cmd.size() < 2)
+        return;
+
+      string key = cmd[1];
+      auto expiryIt = ExpiryTimes.find(key);
+      if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second)
+      {
+        Database.erase(key);
+        ExpiryTimes.erase(key);
+      }
+
+      auto it = Database.find(key);
+      if (it != Database.end())
+      {
+        string value = it->second;
+        string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      }
+      else
+      {
+        const char *nullReply = "$-1\r\n";
+        send(client_fd, nullReply, strlen(nullReply), 0);
+      }
+    }
+
+    void handleRPUSH(vector<string> &cmd, int client_fd)
+
+  {
+
+    if (cmd.size() < 3)
+      return;
+
+    string key = cmd[1];
+
+    for (int i = 2; i < cmd.size(); i++)
+    {
+      string value = cmd[i];
+      List[key].push_back(value);
+      cv.notify_one();
+    }
+
+    int response = List[key].size();
+
+    string reply = ":" + to_string(response) + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+  }
+
+    void handleLPUSH(vector<string> &cmd, int client_fd)
+    {
+
+      if (cmd.size() < 3)
+        return;
+
+      string key = cmd[1];
+
+      for (int i = 2; i < cmd.size(); i++)
+      {
+        string value = cmd[i];
+        List[key].insert(List[key].begin(), value);
+        cv.notify_one();
+      }
+
+      int response = List[key].size();
+
+      string reply = ":" + to_string(response) + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+
+    void handleLRANGE(vector<string> &cmd, int client_fd)
+    {
+      if (cmd.size() < 4)
+        return;
+
+      string key = cmd[1];
+
+      auto it = List.find(key);
+      if (it == List.end())
+      {
+        const char *emptyArray = "*0\r\n";
+        send(client_fd, emptyArray, strlen(emptyArray), 0);
+        return;
+      }
+
+      vector<string> &items = it->second;
+      int start = stoi(cmd[2]);
+      int stop = stoi(cmd[3]);
+
+      if (start < 0)
+        start = items.size() + start;
+      if (stop < 0)
+        stop = items.size() + stop;
+      if (stop >= (int)items.size())
+        stop = items.size() - 1;
+
+      if (start > stop || items.empty())
+      {
+        const char *emptyArray = "*0\r\n";
+        send(client_fd, emptyArray, strlen(emptyArray), 0);
+        return;
+      }
+      if (start < 0)
+        start = 0;
+      vector<string> result;
+
+      for (int i = start; i <= stop; i++)
+      {
+        result.push_back(items[i]);
+      }
+
+      string reply = "*" + to_string(result.size()) + "\r\n";
+      for (auto &val : result)
+      {
+        reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+      }
+
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+
+    void handleLLEN(vector<string> &cmd, int client_fd)
+    {
+
+      if (cmd.size() < 2)
+        return;
+
+      string key = cmd[1];
+      auto it = List.find(key);
+
+      int length = 0;
+
+      if (it != List.end())
+      {
+        length = it->second.size();
+      }
+      string reply = ":" + to_string(length) + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+
+    void handleLPOP(vector<string> &cmd, int client_fd)
+    {
+      if (cmd.size() < 2)
+        return;
+
+      string key = cmd[1];
+      string result = "";
+      auto it = List.find(key);
+
+      if (cmd.size() == 3 && it != List.end())
+      {
+        string elements = cmd[2];
+        vector<string> result2;
+
+        for (int i = 0; i < stoi(elements); i++)
+        {
+          result2.push_back(List[key][0]);
+          List[key].erase(List[key].begin());
+        }
+
+        string reply = "*" + to_string(result2.size()) + "\r\n";
+        for (auto &val : result2)
+        {
+          reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
+        }
+
+        send(client_fd, reply.c_str(), reply.size(), 0);
+        return;
+      }
+
+      if (it != List.end() && cmd.size() == 2)
+      {
+        result = List[key][0];
+        List[key].erase(List[key].begin());
+      }
+
+      string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+
+    void handleBLPOP(vector<string> &cmd, int client_fd)
+  {
+    if (cmd.size() < 3)
+      return;
 
     string key = cmd[1];
     int timeoutSeconds = stoi(cmd[2]) > 0 ? stoi(cmd[2]) : 1;
 
     unique_lock<mutex> lock(mtx);
 
-    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]() {
-        auto it = List.find(key);
-        return it != List.end() && !it->second.empty();
-    });
+    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
+                            {
+          auto it = List.find(key);
+          return it != List.end() && !it->second.empty(); });
 
-    if (found) {
-        string result = List[key][0];
-        List[key].erase(List[key].begin());
+    if (found)
+    {
+      string result = List[key][0];
+      List[key].erase(List[key].begin());
 
-        string reply = "*2\r\n";
-        reply += "$" + to_string(key.size()) + "\r\n" + key + "\r\n";
-        reply += "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
+      string reply = "*2\r\n";
+      reply += "$" + to_string(key.size()) + "\r\n" + key + "\r\n";
+      reply += "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
 
-        send(client_fd, reply.c_str(), reply.size(), 0);
-    } else {
-        const char *timeoutReply = "*-1\r\n";
-        send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+      send(client_fd, reply.c_str(), reply.size(), 0);
     }
-}
+    else
+    {
+      const char *timeoutReply = "*-1\r\n";
+      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+    }
+  }
+
+    void handleTYPE(vector<string> &cmd, int client_fd){
+      
+        if(cmd.size() < 2) return;
+
+        string key = cmd[1];
+
+        auto it = Database.find(key);
+        string result = "";
+
+        if(it != Database.end())
+          result = "string";
+        else 
+          result = "none";
+
+        string reply = "+" + result + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+};
+
+
+ListStorage storage; 
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -313,25 +342,25 @@ void handleCommand(vector<string> &cmd, int client_fd)
     return;
 
   if (cmd[0] == "PING" || cmd[0] == "ping")
-    handlePing(cmd, client_fd);
+    storage.handlePing(cmd, client_fd);
   else if (cmd[0] == "ECHO" || cmd[0] == "echo")
-    handleEcho(cmd, client_fd);
+    storage.handleEcho(cmd, client_fd);
   else if (cmd[0] == "SET" || cmd[0] == "set")
-    handleSET(cmd, client_fd);
+    storage.handleSET(cmd, client_fd);
   else if (cmd[0] == "GET" || cmd[0] == "get")
-    handleGET(cmd, client_fd);
+    storage.handleGET(cmd, client_fd);
   else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
-    handleRPUSH(cmd, client_fd);
+    storage.handleRPUSH(cmd, client_fd);
   else if (cmd[0] == "LPUSH" || cmd[0] == "LPUSH")
-    handleLPUSH(cmd, client_fd);
+    storage.handleLPUSH(cmd, client_fd);
   else if (cmd[0] == "LRANGE" || cmd[0] == "lrange")
-    handleLRANGE(cmd, client_fd);
+    storage.handleLRANGE(cmd, client_fd);
   else if (cmd[0] == "LLEN" || cmd[0] == "llen")
-    handleLLEN(cmd, client_fd);
+    storage.handleLLEN(cmd, client_fd);
   else if (cmd[0] == "LPOP" || cmd[0] == "lpop")
-    handleLPOP(cmd, client_fd);
-  else if(cmd[0] == "BLPOP" || cmd[0] == "blpop")
-    handleBLPOP(cmd,client_fd);
+    storage.handleLPOP(cmd, client_fd);
+  else if (cmd[0] == "BLPOP" || cmd[0] == "blpop")
+    storage.handleBLPOP(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
