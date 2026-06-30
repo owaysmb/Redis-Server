@@ -327,14 +327,14 @@ public:
     auto it = Database.find(key);
     string result;
 
-    if (it != Database.end())
-    {
-      result = "string";
-    }
+     if (Database.find(key) != Database.end())
+        result = "string";
+    else if (List.find(key) != List.end() && !List[key].empty())
+        result = "list";
+    else if(Streams.find(key) != Streams.end() && !Streams[key].empty())
+        result = "stream";
     else
-    {
-      result = "none";
-    }
+        result = "none";
 
     string reply = "+" + result + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
