@@ -16,7 +16,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <unordered_map>
-
 using namespace std;
 
 vector<string> RESP_parse(const string &message)
@@ -327,14 +326,14 @@ public:
     auto it = Database.find(key);
     string result;
 
-     if (Database.find(key) != Database.end())
-        result = "string";
+    if (Database.find(key) != Database.end())
+      result = "string";
     else if (List.find(key) != List.end() && !List[key].empty())
-        result = "list";
-    else if(Streams.find(key) != Streams.end() && !Streams[key].empty())
-        result = "stream";
+      result = "list";
+    else if (Streams.find(key) != Streams.end() && !Streams[key].empty())
+      result = "stream";
     else
-        result = "none";
+      result = "none";
 
     string reply = "+" + result + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
@@ -347,19 +346,55 @@ public:
 
     string streamKey = cmd[1];
     string ID = cmd[2];
-    map<string,string> TempMap;
+    map<string, string> TempMap;
 
-    
-    for (int i = 3; i < cmd.size() - 1; i+=2)
+    for (int i = 3; i < cmd.size() - 1; i += 2)
     {
 
-      TempMap[cmd[i]] = cmd[i+1];
-
+      TempMap[cmd[i]] = cmd[i + 1];
     }
-    Streams[streamKey].push_back({ID,TempMap});
 
-    string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-    send(client_fd, reply.c_str(), reply.size(), 0);
+    auto acceptEntry = [&]() {
+      Streams[streamKey].push_back({ID, TempMap});
+      string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    };
+
+    auto rejectEntry = [&](){
+      string reply = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    };
+
+    if (!Streams[streamKey].empty())
+    {
+      string lastID = Streams[streamKey].back().first;
+      stringstream ss(ID);
+      string ms, seq;
+      getline(ss, ms, '-');
+      getline(ss, seq, '-');
+
+      stringstream ssl(lastID);
+      string ms2, seq2;
+      getline(ssl, ms2, '-');
+      getline(ssl, seq2, '-');
+
+      if(stol(ms) > stol(ms2)){
+        acceptEntry();
+      }else if(stol(ms) == stol(ms2)){
+        if(stol(seq) > stol(seq2)){
+          acceptEntry();
+        }else{
+          rejectEntry();
+        }
+      }else{
+          rejectEntry();
+      }
+
+    }else {
+    acceptEntry();
+}
+
+    
   }
 };
 
@@ -394,7 +429,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
   else if (cmd[0] == "TYPE" || cmd[0] == "type")
     storage.handleTYPE(cmd, client_fd);
   else if (cmd[0] == "XADD" || cmd[0] == "xadd")
-    storage.handleXADD(cmd,client_fd);
+    storage.handleXADD(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
