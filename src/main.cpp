@@ -359,12 +359,13 @@ public:
       TempMap[cmd[i]] = cmd[i + 1];
     }
 
-    auto acceptEntry = [&]()
+    auto IsEmpty = [&]()
     {
       Streams[streamKey].push_back({ID, TempMap});
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
+    
 
     auto rejectEntry = [&]()
     {
@@ -398,7 +399,12 @@ public:
           }
           ID = ms + "-" + seq;
       }
-      
+      auto acceptEntry = [&]()
+    {
+      Streams[streamKey].push_back({ID, TempMap});
+      string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    };
 
       if (stol(ms) > stol(ms2))
       {
@@ -422,7 +428,7 @@ public:
     }
     else
     {
-      acceptEntry();
+      IsEmpty();
     }
   }
 };
