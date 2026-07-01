@@ -385,17 +385,13 @@ public:
       getline(ssl, ms2, '-');
       getline(ssl, seq2, '-');
 
-      if (seq == "*")
-      {
-        if (stoi(ms) == stoi(ms2))
-        {
-          seq = to_string(stoi(seq) + 1);
-        }
-        else
-        {
-          seq = "0";
-        }
-        ID = ms + "-" + seq;
+      if (seq == "*") {
+          if (stoi(ms) == stoi(ms2))
+              seq = to_string(stoi(seq2) + 1);
+          else
+              seq = "0";
+
+          ID = ms + "-" + seq;
       }
       auto acceptEntry = [&]()
       {
@@ -431,9 +427,12 @@ public:
       getline(ss, ms, '-');
       getline(ss, seq, '-');
 
-      if (seq == "*")
-      {
-        seq = "1";
+      if (seq == "*") {
+        if (ms == "0")
+            seq = "1";
+        else
+            seq = "0";
+
         ID = ms + "-" + seq;
       }
       IsEmpty();
