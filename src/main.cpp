@@ -347,6 +347,7 @@ public:
     string streamKey = cmd[1];
     string ID = cmd[2];
     map<string, string> TempMap;
+
     if (ID == "0-0")
     {
       string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
@@ -359,13 +360,12 @@ public:
       TempMap[cmd[i]] = cmd[i + 1];
     }
 
-    auto IsEmpty = [&]()
+    auto acceptEntry = [&]()
     {
       Streams[streamKey].push_back({ID, TempMap});
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
-    
 
     auto rejectEntry = [&]()
     {
@@ -391,20 +391,11 @@ public:
               seq = "0";
           } else {
               string lastMS = ms2; 
-              if (ms == lastMS) {
-                  seq = to_string(stol(seq2) + 1); 
-              } else {
-                  seq = "0"; 
-              }
+              seq = to_string(stol(seq2) + 1); 
           }
           ID = ms + "-" + seq;
       }
-      auto acceptEntry = [&]()
-    {
-      Streams[streamKey].push_back({ID, TempMap});
-      string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-      send(client_fd, reply.c_str(), reply.size(), 0);
-    };
+      
 
       if (stol(ms) > stol(ms2))
       {
@@ -428,7 +419,7 @@ public:
     }
     else
     {
-      IsEmpty();
+      acceptEntry();
     }
   }
 };
