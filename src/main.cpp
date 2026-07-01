@@ -451,51 +451,41 @@ public:
   }
 
   void XRANGE(vector<string> &cmd, int client_fd)
-  {
+{
+    if (cmd.size() < 4) return;
 
-    if (cmd.size() < 3)
-      return;
     string streamKey = cmd[1];
     string start = cmd[2];
     string end = cmd[3];
+
     auto it = Streams.find(streamKey);
-    if (it == Streams.end())
-    {
-      send(client_fd, "*0\r\n", 4, 0);
-      return;
+    if (it == Streams.end()) {
+        send(client_fd, "*0\r\n", 4, 0);
+        return;
     }
 
-    vector<pair<string, map<string, string>>> matches;
 
-    for (const auto &[streamName, entries] : it->second)
-    {
-
-      for (const auto &[timestamp, metrics] : entries)
-      {
-        if (stol(timestamp) >= stol(start) && stol(timestamp) <= stol(end))
-        {
-          matches.push_back({streamName, entries});
+    vector<pair<string, map<string,string>>> matches;
+    for (const auto &[entryID, fields] : it->second) {
+        if (stol(entryID) >= stol(start) && stol(entryID) <= stol(end)) {
+            matches.push_back({entryID, fields});
         }
-        string reply = "*" + to_string(matches.size()) + "\r\n";
-        for (const auto &[entryID, fields] : matches)
-        {
-          reply += "*2\r\n";
-          reply += "$" + to_string(entryID.size()) + "\r\n" + entryID + "\r\n";
-          reply += "*" + to_string(fields.size() * 2) + "\r\n";
-          for (const auto &[k, v] : fields)
-          {
+    }
+
+
+    string reply = "*" + to_string(matches.size()) + "\r\n";
+    for (const auto &[entryID, fields] : matches) {
+        reply += "*2\r\n";
+        reply += "$" + to_string(entryID.size()) + "\r\n" + entryID + "\r\n";
+        reply += "*" + to_string(fields.size() * 2) + "\r\n";
+        for (const auto &[k, v] : fields) {
             reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
             reply += "$" + to_string(v.size()) + "\r\n" + v + "\r\n";
-          }
         }
-
-      send(client_fd, reply.c_str(), reply.size(), 0);
-
-      }
-      
     }
-    
-  }
+
+    send(client_fd, reply.c_str(), reply.size(), 0);
+}
   };
 
   ListStorage storage;
