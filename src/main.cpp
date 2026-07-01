@@ -388,7 +388,7 @@ public:
 
       if(seq == "*"){
         if(stoi(ms) == stoi(ms2)){
-          seq = to_string(stoi(seq2) + 1);
+          seq = to_string(stoi(seq) + 1);
         }else{
           seq = "0";
         }
