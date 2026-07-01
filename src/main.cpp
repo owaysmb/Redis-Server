@@ -347,10 +347,11 @@ public:
     string streamKey = cmd[1];
     string ID = cmd[2];
     map<string, string> TempMap;
-    if (ID == "0-0") {
-        string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
-        return;
+    if (ID == "0-0")
+    {
+      string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+      return;
     }
     for (int i = 3; i < cmd.size() - 1; i += 2)
     {
@@ -358,13 +359,15 @@ public:
       TempMap[cmd[i]] = cmd[i + 1];
     }
 
-    auto acceptEntry = [&]() {
+    auto acceptEntry = [&]()
+    {
       Streams[streamKey].push_back({ID, TempMap});
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
 
-    auto rejectEntry = [&](){
+    auto rejectEntry = [&]()
+    {
       string reply = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
@@ -382,23 +385,44 @@ public:
       getline(ssl, ms2, '-');
       getline(ssl, seq2, '-');
 
-      if(stol(ms) > stol(ms2)){
-        acceptEntry();
-      }else if(stol(ms) == stol(ms2)){
-        if(stol(seq) > stol(seq2)){
-          acceptEntry();
-        }else{
-          rejectEntry();
-        }
-      }else{
-          rejectEntry();
+      if (seq == "*") {
+          if (Streams[streamKey].empty()) {
+              seq = "0";
+          } else {
+              string lastMS = ms2; 
+              if (ms == lastMS) {
+                  seq = to_string(stol(seq2) + 1); 
+              } else {
+                  seq = "0"; 
+              }
+          }
+          ID = ms + "-" + seq;
       }
 
-    }else {
-    acceptEntry();
-}
-
-    
+      if (stol(ms) > stol(ms2))
+      {
+        acceptEntry();
+      }
+      else if (stol(ms) == stol(ms2))
+      {
+        if (stol(seq) > stol(seq2))
+        {
+          acceptEntry();
+        }
+        else
+        {
+          rejectEntry();
+        }
+      }
+      else
+      {
+        rejectEntry();
+      }
+    }
+    else
+    {
+      acceptEntry();
+    }
   }
 };
 
