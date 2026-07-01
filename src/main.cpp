@@ -482,7 +482,7 @@ public:
         getline(ssc, msc, '-');
         getline(ssc, seqc, '-');
 
-        if (stol(msc) >= stol(ms) && stol(msc) <= stol(mse)) {
+        if (stol(seqc) >= stol(seq) && stol(seqc) <= stol(seqe)) {
             matches.push_back({entryID, fields});
         }
     }
