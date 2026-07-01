@@ -347,6 +347,14 @@ public:
     string streamKey = cmd[1];
     string ID = cmd[2];
     map<string, string> TempMap;
+    auto now = chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto millisec = chrono::duration_cast<chrono::milliseconds>(duration).count();
+
+    if(ID == "*"){
+      ID = to_string(millisec) + "-" + "0";
+    }
+
     if (ID == "0-0")
     {
       string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
