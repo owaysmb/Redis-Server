@@ -464,10 +464,25 @@ public:
         return;
     }
 
+    stringstream ss(start);
+    string ms, seq;
+    getline(ss, ms, '-');
+    getline(ss, seq, '-');
+
+    stringstream sse(end);
+    string mse, seqe;
+    getline(sse, mse, '-');
+    getline(sse, seqe, '-');
 
     vector<pair<string, map<string,string>>> matches;
     for (const auto &[entryID, fields] : it->second) {
-        if (stol(entryID) >= stol(start) && stol(entryID) <= stol(end)) {
+
+        stringstream ssc(entryID);
+        string msc, seqc;
+        getline(ssc, msc, '-');
+        getline(ssc, seqc, '-');
+
+        if (stol(msc) >= stol(ms) && stol(msc) <= stol(mse)) {
             matches.push_back({entryID, fields});
         }
     }
