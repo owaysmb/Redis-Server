@@ -358,7 +358,30 @@ public:
 
       TempMap[cmd[i]] = cmd[i + 1];
     }
+    string lastID = Streams[streamKey].back().first;
+        stringstream ss(ID);
+        string ms, seq;
+        getline(ss, ms, '-');
+        getline(ss, seq, '-');
 
+        stringstream ssl(lastID);
+        string ms2, seq2;
+        getline(ssl, ms2, '-');
+        getline(ssl, seq2, '-');
+
+        if (seq == "*") {
+            if (Streams[streamKey].empty()) {
+                seq = "0";
+            } else {
+                string lastMS = ms2; 
+                if (ms == lastMS) {
+                    seq = to_string(stol(seq2) + 1); 
+                } else {
+                    seq = "0"; 
+                }
+            }
+            ID = ms + "-" + seq;
+        }
     auto acceptEntry = [&]()
     {
       Streams[streamKey].push_back({ID, TempMap});
@@ -374,30 +397,8 @@ public:
 
     if (!Streams[streamKey].empty())
     {
-      string lastID = Streams[streamKey].back().first;
-      stringstream ss(ID);
-      string ms, seq;
-      getline(ss, ms, '-');
-      getline(ss, seq, '-');
-
-      stringstream ssl(lastID);
-      string ms2, seq2;
-      getline(ssl, ms2, '-');
-      getline(ssl, seq2, '-');
-
-      if (seq == "*") {
-          if (Streams[streamKey].empty()) {
-              seq = "0";
-          } else {
-              string lastMS = ms2; 
-              if (ms == lastMS) {
-                  seq = to_string(stol(seq2) + 1); 
-              } else {
-                  seq = "0"; 
-              }
-          }
-          ID = ms + "-" + seq;
-      }
+      
+      
 
       if (stol(ms) > stol(ms2))
       {
