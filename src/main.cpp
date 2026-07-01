@@ -347,7 +347,6 @@ public:
     string streamKey = cmd[1];
     string ID = cmd[2];
     map<string, string> TempMap;
-
     if (ID == "0-0")
     {
       string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
@@ -360,7 +359,7 @@ public:
       TempMap[cmd[i]] = cmd[i + 1];
     }
 
-    auto acceptEntry = [&]()
+    auto IsEmpty = [&]()
     {
       Streams[streamKey].push_back({ID, TempMap});
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
@@ -372,30 +371,34 @@ public:
       string reply = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
+    
+    string lastID = Streams[streamKey].back().first;
+    stringstream ss(ID);
+    string ms, seq;
+    getline(ss, ms, '-');
+    getline(ss, seq, '-');
 
-    if (!Streams[streamKey].empty())
-    {
-      string lastID = Streams[streamKey].back().first;
-      stringstream ss(ID);
-      string ms, seq;
-      getline(ss, ms, '-');
-      getline(ss, seq, '-');
+    stringstream ssl(lastID);
+    string ms2, seq2;
+    getline(ssl, ms2, '-');
+    getline(ssl, seq2, '-');
 
-      stringstream ssl(lastID);
-      string ms2, seq2;
-      getline(ssl, ms2, '-');
-      getline(ssl, seq2, '-');
+    if (!Streams[streamKey].empty()){
 
-      if (seq == "*") {
-          if (Streams[streamKey].empty()) {
-              seq = "0";
-          } else {
-              string lastMS = ms2; 
-              seq = to_string(stol(seq2) + 1); 
-          }
-          ID = ms + "-" + seq;
+      if(seq == "*"){
+        if(ms == ms2){
+          seq = to_string(stoi(seq2) + 1);
+        }else{
+          seq = "0";
+        }
+        ID = ms + "-" + seq;
       }
-      
+      auto acceptEntry = [&]()
+    {
+      Streams[streamKey].push_back({ID, TempMap});
+      string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    };
 
       if (stol(ms) > stol(ms2))
       {
@@ -419,7 +422,11 @@ public:
     }
     else
     {
-      acceptEntry();
+      if (seq == "*") {
+        seq = "0";
+        ID = ms + "-" + seq;
+      }
+      IsEmpty();
     }
   }
 };
