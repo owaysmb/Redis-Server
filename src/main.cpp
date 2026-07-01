@@ -371,34 +371,38 @@ public:
       string reply = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
-    
-    string lastID = Streams[streamKey].back().first;
-    stringstream ss(ID);
-    string ms, seq;
-    getline(ss, ms, '-');
-    getline(ss, seq, '-');
 
-    stringstream ssl(lastID);
-    string ms2, seq2;
-    getline(ssl, ms2, '-');
-    getline(ssl, seq2, '-');
+    if (!Streams[streamKey].empty())
+    {
+      string lastID = Streams[streamKey].back().first;
+      stringstream ss(ID);
+      string ms, seq;
+      getline(ss, ms, '-');
+      getline(ss, seq, '-');
 
-    if (!Streams[streamKey].empty()){
+      stringstream ssl(lastID);
+      string ms2, seq2;
+      getline(ssl, ms2, '-');
+      getline(ssl, seq2, '-');
 
-      if(seq == "*"){
-        if(ms == ms2){
+      if (seq == "*")
+      {
+        if (ms == ms2)
+        {
           seq = to_string(stoi(seq2) + 1);
-        }else{
+        }
+        else
+        {
           seq = "0";
         }
         ID = ms + "-" + seq;
       }
       auto acceptEntry = [&]()
-    {
-      Streams[streamKey].push_back({ID, TempMap});
-      string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-      send(client_fd, reply.c_str(), reply.size(), 0);
-    };
+      {
+        Streams[streamKey].push_back({ID, TempMap});
+        string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      };
 
       if (stol(ms) > stol(ms2))
       {
@@ -422,7 +426,13 @@ public:
     }
     else
     {
-      if (seq == "*") {
+      stringstream ss(ID);
+      string ms, seq;
+      getline(ss, ms, '-');
+      getline(ss, seq, '-');
+
+      if (seq == "*")
+      {
         seq = "0";
         ID = ms + "-" + seq;
       }
