@@ -450,7 +450,7 @@ public:
     }
   }
 
-  void XRANGE(vector<string> &cmd, int client_fd)
+  void handleXRANGE(vector<string> &cmd, int client_fd)
 {
     if (cmd.size() < 4) return;
 
@@ -520,6 +520,8 @@ public:
       storage.handleTYPE(cmd, client_fd);
     else if (cmd[0] == "XADD" || cmd[0] == "xadd")
       storage.handleXADD(cmd, client_fd);
+    else if(cmd[0] == "XRANGE" || cmd[0] == "xrange")
+      storage.handleXRANGE(cmd,client_fd);
   }
 
   void handleCLient(int client_fd)
