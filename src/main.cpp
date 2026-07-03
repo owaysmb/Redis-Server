@@ -528,32 +528,84 @@ public:
     string ID = cmd[3];
     auto it = Streams.find(streamKey);
 
-    if (it == Streams.end())
-    {
-      send(client_fd, "*0\r\n", 4, 0);
-      return;
-    }
-    string reply = "*1\r\n";
-    reply += "*2\r\n";
-    reply += "$" + to_string(streamKey.size()) + "\r\n" + streamKey + "\r\n";
-    reply += "*1\r\n";
+    int TotalKeysCount = 0;
+    vector<string> TotalStreamKeys;
+    vector<string> TotalIDs;
 
-    for (auto [k, v] : it->second)
+    for (auto i : Streams)
+      TotalKeysCount++;
+
+    for (int i = 2; i < (cmd.size() - TotalKeysCount); i++)
     {
-      if (k > ID)
+      TotalStreamKeys.push_back(cmd[i]);
+    }
+
+    for (int i = (2 + TotalKeysCount); i < cmd.size(); i++)
+    {
+      TotalIDs.push_back(cmd[i]);
+    }
+
+    for (int i = 0; i < TotalStreamKeys.size(); i++)
+    {
+      auto it = Streams.find(TotalStreamKeys[i]);
+
+      if (it == Streams.end())
       {
-        reply += "*2\r\n";
-        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-        reply += "*" + to_string(v.size() * 2) + "\r\n";
-        for (auto [i, j] : v)
-        {
-          reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
-          reply += "$" + to_string(j.size()) + "\r\n" + j + "\r\n";
-        }
+        send(client_fd, "*0\r\n", 4, 0);
+        return;
       }
+
+      string reply = "*1\r\n";
+      reply += "*2\r\n";
+      reply += "$" + to_string(TotalStreamKeys[i].size()) + "\r\n" + TotalStreamKeys[i] + "\r\n";
+      reply += "*1\r\n";
+
+        for (auto [k, v] : it->second)
+        {
+            reply += "*2\r\n";
+            reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+            reply += "*" + to_string(v.size() * 2) + "\r\n";
+            for (auto [t,h] : v)
+            {
+              reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+              reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+            }
+        }
+      send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    send(client_fd, reply.c_str(), reply.size(), 0);
+    //   for (auto i : TotalStreamKeys)
+    //   {
+    //     auto it = Streams.find(i);
+
+    //     if (it == Streams.end())
+    //     {
+    //       send(client_fd, "*0\r\n", 4, 0);
+    //       return;
+    //     }
+
+    //     string reply = "*1\r\n";
+    //     reply += "*2\r\n";
+    //     reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
+    //     reply += "*1\r\n";
+
+    //     // for (auto [k, v] : it->second)
+    //     // {
+    //     //   if (k > ID)
+    //     //   {
+    //     //     reply += "*2\r\n";
+    //     //     reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+    //     //     reply += "*" + to_string(v.size() * 2) + "\r\n";
+    //     //     for (auto [i, j] : v)
+    //     //     {
+    //     //       reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
+    //     //       reply += "$" + to_string(j.size()) + "\r\n" + j + "\r\n";
+    //     //     }
+    //     //   }
+    //     // }
+
+    //     send(client_fd, reply.c_str(), reply.size(), 0);
+    // }
   }
 };
 
