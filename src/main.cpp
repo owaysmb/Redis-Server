@@ -469,6 +469,9 @@ public:
     if(start == "-"){
       start = Streams[streamKey].front().first;
     }
+    if(end == "+"){
+      end = Streams[streamKey].back().first;
+    }
 
     stringstream ss(start);
     string ms, seq;
