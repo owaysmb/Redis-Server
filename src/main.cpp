@@ -529,8 +529,6 @@ public:
     vector<string> TotalStreamKeys;
     vector<string> TotalIDs;
 
-    for (auto i : Streams)
-      TotalKeysCount++;
 
     for (int i = 2; i < (cmd.size() - TotalKeysCount); i++)
       TotalStreamKeys.push_back(cmd[i]);
