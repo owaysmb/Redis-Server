@@ -487,8 +487,9 @@ public:
     getline(sse, seqe, '-');
 
     vector<pair<string, map<string, string>>> matches;
-    
-    for (const auto &[entryID, fields] : it->second){
+
+    for (const auto &[entryID, fields] : it->second)
+    {
 
       stringstream ssc(entryID);
       string msc, seqc;
@@ -526,29 +527,33 @@ public:
     string streamKey = cmd[2];
     string ID = cmd[3];
     auto it = Streams.find(streamKey);
-    if (it == Streams.end()) {
-        send(client_fd, "*0\r\n", 4, 0);
-        return;
-    }
-      string reply = "*1\r\n";
-      reply += "*2\r\n";
-      reply += "$" + to_string(streamKey.size()) + "\r\n" + streamKey + "\r\n";
-      reply += "*1\r\n";
 
-      for (auto [k, v] : it->second) {
-          if (k == ID) {
-              reply += "*2\r\n";
-              reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-              reply += "*" + to_string(v.size() * 2) + "\r\n";
-              for (auto [i, j] : v) {
-                  reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
-                  reply += "$" + to_string(j.size()) + "\r\n" + j + "\r\n";
-              }
-          }
+    if (it == Streams.end())
+    {
+      send(client_fd, "*0\r\n", 4, 0);
+      return;
+    }
+    string reply = "*1\r\n";
+    reply += "*2\r\n";
+    reply += "$" + to_string(streamKey.size()) + "\r\n" + streamKey + "\r\n";
+    reply += "*1\r\n";
+
+    for (auto [k, v] : it->second)
+    {
+      if (k > ID)
+      {
+        reply += "*2\r\n";
+        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+        reply += "*" + to_string(v.size() * 2) + "\r\n";
+        for (auto [i, j] : v)
+        {
+          reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
+          reply += "$" + to_string(j.size()) + "\r\n" + j + "\r\n";
+        }
       }
+    }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-
   }
 };
 
