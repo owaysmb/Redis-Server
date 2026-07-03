@@ -16,6 +16,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <unordered_map>
+#include <cmath>
 using namespace std;
 
 vector<string> RESP_parse(const string &message)
@@ -524,7 +525,7 @@ public:
     if (cmd.size() < 4)
       return;
 
-    int TotalKeysCount = (cmd.size() - 2) / 2;
+    int TotalKeysCount = ceil((cmd.size() - 2) / 2);
     vector<string> TotalStreamKeys;
     vector<string> TotalIDs;
 
