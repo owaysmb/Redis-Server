@@ -460,16 +460,19 @@ public:
     string end = cmd[3];
 
     auto it = Streams.find(streamKey);
+
     if (it == Streams.end())
     {
       send(client_fd, "*0\r\n", 4, 0);
       return;
     }
 
-    if(start == "-"){
+    if (start == "-")
+    {
       start = Streams[streamKey].front().first;
     }
-    if(end == "+"){
+    if (end == "+")
+    {
       end = Streams[streamKey].back().first;
     }
 
@@ -484,8 +487,8 @@ public:
     getline(sse, seqe, '-');
 
     vector<pair<string, map<string, string>>> matches;
-    for (const auto &[entryID, fields] : it->second)
-    {
+    
+    for (const auto &[entryID, fields] : it->second){
 
       stringstream ssc(entryID);
       string msc, seqc;
@@ -512,6 +515,40 @@ public:
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
+  }
+
+  void handleXREAD(vector<string> &cmd, int client_fd)
+  {
+
+    if (cmd.size() < 4)
+      return;
+
+    string streamKey = cmd[2];
+    string ID = cmd[3];
+    auto it = Streams.find(streamKey);
+    if (it == Streams.end()) {
+        send(client_fd, "*0\r\n", 4, 0);
+        return;
+    }
+      string reply = "*1\r\n";
+      reply += "*2\r\n";
+      reply += "$" + to_string(streamKey.size()) + "\r\n" + streamKey + "\r\n";
+      reply += "*1\r\n";
+
+      for (auto [k, v] : it->second) {
+          if (k == ID) {
+              reply += "*2\r\n";
+              reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+              reply += "*" + to_string(v.size() * 2) + "\r\n";
+              for (auto [i, j] : v) {
+                  reply += "$" + to_string(i.size()) + "\r\n" + i + "\r\n";
+                  reply += "$" + to_string(j.size()) + "\r\n" + j + "\r\n";
+              }
+          }
+      }
+
+    send(client_fd, reply.c_str(), reply.size(), 0);
+
   }
 };
 
@@ -549,6 +586,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXADD(cmd, client_fd);
   else if (cmd[0] == "XRANGE" || cmd[0] == "xrange")
     storage.handleXRANGE(cmd, client_fd);
+  else if (cmd[0] == "XREAD" || cmd[0] == "xread")
+    storage.handleXREAD(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
