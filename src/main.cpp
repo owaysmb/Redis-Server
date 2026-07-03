@@ -451,17 +451,23 @@ public:
   }
 
   void handleXRANGE(vector<string> &cmd, int client_fd)
-{
-    if (cmd.size() < 4) return;
+  {
+    if (cmd.size() < 4)
+      return;
 
     string streamKey = cmd[1];
     string start = cmd[2];
     string end = cmd[3];
 
     auto it = Streams.find(streamKey);
-    if (it == Streams.end()) {
-        send(client_fd, "*0\r\n", 4, 0);
-        return;
+    if (it == Streams.end())
+    {
+      send(client_fd, "*0\r\n", 4, 0);
+      return;
+    }
+
+    if(start == "-"){
+      start = Streams[streamKey].front().first;
     }
 
     stringstream ss(start);
@@ -474,148 +480,151 @@ public:
     getline(sse, mse, '-');
     getline(sse, seqe, '-');
 
-    vector<pair<string, map<string,string>>> matches;
-    for (const auto &[entryID, fields] : it->second) {
+    vector<pair<string, map<string, string>>> matches;
+    for (const auto &[entryID, fields] : it->second)
+    {
 
-        stringstream ssc(entryID);
-        string msc, seqc;
-        getline(ssc, msc, '-');
-        getline(ssc, seqc, '-');
+      stringstream ssc(entryID);
+      string msc, seqc;
+      getline(ssc, msc, '-');
+      getline(ssc, seqc, '-');
 
-        if (stol(seqc) >= stol(seq) && stol(seqc) <= stol(seqe)) {
-            matches.push_back({entryID, fields});
-        }
+      if (stol(seqc) >= stol(seq) && stol(seqc) <= stol(seqe))
+      {
+        matches.push_back({entryID, fields});
+      }
     }
 
-
     string reply = "*" + to_string(matches.size()) + "\r\n";
-    for (const auto &[entryID, fields] : matches) {
-        reply += "*2\r\n";
-        reply += "$" + to_string(entryID.size()) + "\r\n" + entryID + "\r\n";
-        reply += "*" + to_string(fields.size() * 2) + "\r\n";
-        for (const auto &[k, v] : fields) {
-            reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-            reply += "$" + to_string(v.size()) + "\r\n" + v + "\r\n";
-        }
+    for (const auto &[entryID, fields] : matches)
+    {
+      reply += "*2\r\n";
+      reply += "$" + to_string(entryID.size()) + "\r\n" + entryID + "\r\n";
+      reply += "*" + to_string(fields.size() * 2) + "\r\n";
+      for (const auto &[k, v] : fields)
+      {
+        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+        reply += "$" + to_string(v.size()) + "\r\n" + v + "\r\n";
+      }
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
+  }
+};
+
+ListStorage storage;
+
+void handleCommand(vector<string> &cmd, int client_fd)
+{
+
+  if (cmd.empty())
+    return;
+
+  if (cmd[0] == "PING" || cmd[0] == "ping")
+    storage.handlePing(cmd, client_fd);
+  else if (cmd[0] == "ECHO" || cmd[0] == "echo")
+    storage.handleEcho(cmd, client_fd);
+  else if (cmd[0] == "SET" || cmd[0] == "set")
+    storage.handleSET(cmd, client_fd);
+  else if (cmd[0] == "GET" || cmd[0] == "get")
+    storage.handleGET(cmd, client_fd);
+  else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
+    storage.handleRPUSH(cmd, client_fd);
+  else if (cmd[0] == "LPUSH" || cmd[0] == "LPUSH")
+    storage.handleLPUSH(cmd, client_fd);
+  else if (cmd[0] == "LRANGE" || cmd[0] == "lrange")
+    storage.handleLRANGE(cmd, client_fd);
+  else if (cmd[0] == "LLEN" || cmd[0] == "llen")
+    storage.handleLLEN(cmd, client_fd);
+  else if (cmd[0] == "LPOP" || cmd[0] == "lpop")
+    storage.handleLPOP(cmd, client_fd);
+  else if (cmd[0] == "BLPOP" || cmd[0] == "blpop")
+    storage.handleBLPOP(cmd, client_fd);
+  else if (cmd[0] == "TYPE" || cmd[0] == "type")
+    storage.handleTYPE(cmd, client_fd);
+  else if (cmd[0] == "XADD" || cmd[0] == "xadd")
+    storage.handleXADD(cmd, client_fd);
+  else if (cmd[0] == "XRANGE" || cmd[0] == "xrange")
+    storage.handleXRANGE(cmd, client_fd);
 }
-  };
 
-  ListStorage storage;
-
-  void handleCommand(vector<string> &cmd, int client_fd)
+void handleCLient(int client_fd)
+{
+  char pingBuffer[1024];
+  while (true)
   {
+    int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
 
-    if (cmd.empty())
-      return;
+    if (PingBytesRecieved <= 0)
+      break;
 
-    if (cmd[0] == "PING" || cmd[0] == "ping")
-      storage.handlePing(cmd, client_fd);
-    else if (cmd[0] == "ECHO" || cmd[0] == "echo")
-      storage.handleEcho(cmd, client_fd);
-    else if (cmd[0] == "SET" || cmd[0] == "set")
-      storage.handleSET(cmd, client_fd);
-    else if (cmd[0] == "GET" || cmd[0] == "get")
-      storage.handleGET(cmd, client_fd);
-    else if (cmd[0] == "RPUSH" || cmd[0] == "rpush")
-      storage.handleRPUSH(cmd, client_fd);
-    else if (cmd[0] == "LPUSH" || cmd[0] == "LPUSH")
-      storage.handleLPUSH(cmd, client_fd);
-    else if (cmd[0] == "LRANGE" || cmd[0] == "lrange")
-      storage.handleLRANGE(cmd, client_fd);
-    else if (cmd[0] == "LLEN" || cmd[0] == "llen")
-      storage.handleLLEN(cmd, client_fd);
-    else if (cmd[0] == "LPOP" || cmd[0] == "lpop")
-      storage.handleLPOP(cmd, client_fd);
-    else if (cmd[0] == "BLPOP" || cmd[0] == "blpop")
-      storage.handleBLPOP(cmd, client_fd);
-    else if (cmd[0] == "TYPE" || cmd[0] == "type")
-      storage.handleTYPE(cmd, client_fd);
-    else if (cmd[0] == "XADD" || cmd[0] == "xadd")
-      storage.handleXADD(cmd, client_fd);
-    else if(cmd[0] == "XRANGE" || cmd[0] == "xrange")
-      storage.handleXRANGE(cmd,client_fd);
+    pingBuffer[PingBytesRecieved] = '\0';
+    string message(pingBuffer);
+
+    vector<string> cmd = RESP_parse(message);
+
+    handleCommand(cmd, client_fd);
+  }
+  close(client_fd);
+}
+
+int main()
+{
+
+  cout << unitbuf;
+  cerr << unitbuf;
+
+  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (server_fd < 0)
+  {
+    cerr << "Failed to create server socket\n";
+    return 1;
   }
 
-  void handleCLient(int client_fd)
+  int reuse = 1;
+
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
   {
-    char pingBuffer[1024];
-    while (true)
-    {
-      int PingBytesRecieved = recv(client_fd, pingBuffer, sizeof(pingBuffer), 0);
-
-      if (PingBytesRecieved <= 0)
-        break;
-
-      pingBuffer[PingBytesRecieved] = '\0';
-      string message(pingBuffer);
-
-      vector<string> cmd = RESP_parse(message);
-
-      handleCommand(cmd, client_fd);
-    }
-    close(client_fd);
+    cerr << "setsockopt failed\n";
+    return 1;
   }
 
-  int main()
+  struct sockaddr_in server_addr;
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+  server_addr.sin_port = htons(6379);
+
+  if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
   {
-
-    cout << unitbuf;
-    cerr << unitbuf;
-
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (server_fd < 0)
-    {
-      cerr << "Failed to create server socket\n";
-      return 1;
-    }
-
-    int reuse = 1;
-
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
-    {
-      cerr << "setsockopt failed\n";
-      return 1;
-    }
-
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(6379);
-
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
-    {
-      cerr << "Failed to bind to port 6379\n";
-      return 1;
-    }
-
-    int connection_backlog = 5;
-
-    if (listen(server_fd, connection_backlog) != 0)
-    {
-      cerr << "listen failed\n";
-      return 1;
-    }
-
-    struct sockaddr_in client_addr;
-    int client_addr_len = sizeof(client_addr);
-    cout << "Waiting for a client to connect...\n";
-
-    cout << "Logs from your program will appear here!\n";
-
-    cout << "Client connected\n";
-
-    while (true)
-    {
-      int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
-      thread t(handleCLient, client_fd);
-      t.detach();
-    }
-
-    close(server_fd);
-
-    return 0;
+    cerr << "Failed to bind to port 6379\n";
+    return 1;
   }
+
+  int connection_backlog = 5;
+
+  if (listen(server_fd, connection_backlog) != 0)
+  {
+    cerr << "listen failed\n";
+    return 1;
+  }
+
+  struct sockaddr_in client_addr;
+  int client_addr_len = sizeof(client_addr);
+  cout << "Waiting for a client to connect...\n";
+
+  cout << "Logs from your program will appear here!\n";
+
+  cout << "Client connected\n";
+
+  while (true)
+  {
+    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+    thread t(handleCLient, client_fd);
+    t.detach();
+  }
+
+  close(server_fd);
+
+  return 0;
+}
