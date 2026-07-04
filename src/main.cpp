@@ -588,7 +588,7 @@ public:
     bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
     auto it = Streams.find(Key);
-    // if (it == Streams.end() || it->second.empty()) return false;
+    if (it == Streams.end() || it->second.empty()) return false;
 
     string lastID = it->second.back().first;
     stringstream ss1(lastID), ss2(ID);
@@ -599,7 +599,7 @@ public:
            (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
     });
 
-    if(found){
+    
       string reply = "*1\r\n";
       reply += "*2\r\n";
       reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
@@ -629,11 +629,8 @@ public:
           }
       }
       send(client_fd, reply.c_str(), reply.size(), 0);
-    }else
-    {
-      const char *timeoutReply = "*-1\r\n";
-      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-    }
+      
+    
 
     
     
