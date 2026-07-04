@@ -529,39 +529,89 @@ public:
     vector<string> TotalStreamKeys;
     vector<string> TotalIDs;
 
-
     for (int i = 2; i < (cmd.size() - TotalKeysCount); i++)
       TotalStreamKeys.push_back(cmd[i]);
 
     for (int i = (2 + TotalKeysCount); i < cmd.size(); i++)
       TotalIDs.push_back(cmd[i]);
-    
+
     string reply = "*" + to_string(TotalKeysCount) + "\r\n";
 
     for (int i = 0; i < TotalStreamKeys.size(); i++)
     {
-        auto it = Streams.find(TotalStreamKeys[i]);
-        if (it == Streams.end()) continue;
+      auto it = Streams.find(TotalStreamKeys[i]);
+      if (it == Streams.end())
+        continue;
 
+      reply += "*2\r\n";
+      reply += "$" + to_string(TotalStreamKeys[i].size()) + "\r\n" + TotalStreamKeys[i] + "\r\n";
+      reply += "*1\r\n";
+
+      for (auto [k, v] : it->second)
+      {
         reply += "*2\r\n";
-        reply += "$" + to_string(TotalStreamKeys[i].size()) + "\r\n" + TotalStreamKeys[i] + "\r\n";
-        reply += "*1\r\n";
-
-        for (auto [k, v] : it->second)
+        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+        reply += "*" + to_string(v.size() * 2) + "\r\n";
+        for (auto [t, h] : v)
         {
-            reply += "*2\r\n";
-            reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-            reply += "*" + to_string(v.size() * 2) + "\r\n";
-            for (auto [t, h] : v)
-            {
-                reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
-                reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
-            }
+          reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+          reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
         }
+      }
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
+  }
 
+  void handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
+  {
+
+    if (cmd.size() < 5)
+      return;
+
+    string Time = cmd[2];
+    string Key = cmd[4];
+    string ID = cmd[5];
+
+    int timeoutSeconds = stoi(Time) > 0 ? stoi(Time) : 1;
+
+    unique_lock<mutex> lock(mtx);
+
+    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
+                             {
+        
+        auto it = Streams.find(Key);
+        return it != Streams.end() && !it->second.empty(); });
+
+    if (found)
+    {
+      string reply = "*" + to_string(Key.size()) + "\r\n";
+      reply += "*2\r\n";
+      reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
+      reply += "*1\r\n";
+
+      auto it = Streams.find(Key);
+      if (it == Streams.end())
+        return;
+
+      for (auto [k, v] : it->second)
+      {
+        reply += "*2\r\n";
+        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+        reply += "*" + to_string(v.size() * 2) + "\r\n";
+        for (auto [t, h] : v)
+        {
+          reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+          reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+        }
+      }
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+    else
+    {
+      const char *timeoutReply = "*-1\r\n";
+      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+    }
   }
 };
 
@@ -599,8 +649,10 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXADD(cmd, client_fd);
   else if (cmd[0] == "XRANGE" || cmd[0] == "xrange")
     storage.handleXRANGE(cmd, client_fd);
-  else if (cmd[0] == "XREAD" || cmd[0] == "xread")
+  else if (cmd[0] == "XREAD" && cmd[1] != "block" || cmd[0] == "XREAD" && cmd[1] != "BLOCK" )
     storage.handleXREAD(cmd, client_fd);
+  else if (cmd[0] == "XREAD" && cmd[1] == "block" || cmd[0] == "XREAD" && cmd[1] == "BLOCK")
+    storage.handleXREAD_BLOCK(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
