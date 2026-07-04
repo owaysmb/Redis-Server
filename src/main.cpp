@@ -572,16 +572,14 @@ public:
   }
 
   void handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
-  {
-
+{
     if (cmd.size() < 6)
-      return;
+        return;
 
     int Time = stoi(cmd[2]);
     string Key = cmd[4];
     string ID = cmd[5];
 
-    int timeoutSeconds = Time;
     unique_lock<mutex> lock(mtx);
     string thresholdID;
     if (ID == "$") {
@@ -594,9 +592,7 @@ public:
         thresholdID = ID;
     }
 
-    if (Time == 0)
-    {
-      cv.wait(lock, [&]() {
+    auto predicate = [&]() {
         auto it = Streams.find(Key);
         if (it == Streams.end() || it->second.empty()) return false;
         string lastID = it->second.back().first;
@@ -604,64 +600,58 @@ public:
         stringstream ss1(lastID), ss2(thresholdID);
         getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
         getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-        return stol(ms1) > stol(ms2) || 
+        return stol(ms1) > stol(ms2) ||
                (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
-      });
-    }
-    else
-    {
-      bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
-                               {
-      auto it = Streams.find(Key);
-      if (it == Streams.end() || it->second.empty()) return false;
-      string lastID = it->second.back().first;
-      string ms1, seq1, ms2, seq2;
-      stringstream ss1(lastID), ss2(thresholdID);
-      getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-      getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-      return stol(ms1) > stol(ms2) || 
-              (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));});
+    };
 
-      if (found)
-      {
+    auto buildReply = [&]() {
         string reply = "*1\r\n";
         reply += "*2\r\n";
         reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
-        reply += "*1\r\n";
 
         auto it = Streams.find(Key);
-        if (it == Streams.end())
-          return;
+        if (it == Streams.end()) return reply;
 
-        for (auto [k, v] : it->second)
-        {
-          string ms1, seq1, ms2, seq2;
-          stringstream ss1(k), ss2(thresholdID);
-          getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-          getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-          bool greater = stol(ms1) > stol(ms2) ||
-                         (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
-          if (!greater)
-            continue;
+        string entriesReply = "";
+        int count = 0;
+        for (auto [k, v] : it->second) {
+            string ms1, seq1, ms2, seq2;
+            stringstream ss1(k), ss2(thresholdID);
+            getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
+            getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
+            bool greater = stol(ms1) > stol(ms2) ||
+                           (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
+            if (!greater) continue;
 
-          reply += "*2\r\n";
-          reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-          reply += "*" + to_string(v.size() * 2) + "\r\n";
-          for (auto [t, h] : v)
-          {
-            reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
-            reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
-          }
+            count++;
+            entriesReply += "*2\r\n";
+            entriesReply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+            entriesReply += "*" + to_string(v.size() * 2) + "\r\n";
+            for (auto [t, h] : v) {
+                entriesReply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+                entriesReply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+            }
         }
+        reply += "*" + to_string(count) + "\r\n";
+        reply += entriesReply;
+        return reply;
+    };
+
+    if (Time == 0) {
+        cv.wait(lock, predicate);
+        string reply = buildReply();
         send(client_fd, reply.c_str(), reply.size(), 0);
-      }
-      else
-      {
-        const char *timeoutReply = "*-1\r\n";
-        send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-      }
+    } else {
+        bool found = cv.wait_for(lock, chrono::milliseconds(Time), predicate);
+        if (found) {
+            string reply = buildReply();
+            send(client_fd, reply.c_str(), reply.size(), 0);
+        } else {
+            const char *timeoutReply = "*-1\r\n";
+            send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+        }
     }
-  }
+}
 };
 
 ListStorage storage;
