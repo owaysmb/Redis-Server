@@ -585,7 +585,7 @@ public:
 
     unique_lock<mutex> lock(mtx);
 
-    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
+    bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
      auto it = Streams.find(Key);
     if (it == Streams.end() || it->second.empty()) return false;
