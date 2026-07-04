@@ -603,14 +603,22 @@ public:
 
       for (auto [k, v] : it->second)
       {
-        reply += "*2\r\n";
-        reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-        reply += "*" + to_string(v.size() * 2) + "\r\n";
-        for (auto [t, h] : v)
-        {
-          reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
-          reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
-        }
+          stringstream ss1(k), ss2(ID);
+          string ms1, seq1, ms2, seq2;
+          getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
+          getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
+          bool greater = stol(ms1) > stol(ms2) || 
+                        (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
+          if (!greater) continue;
+
+          reply += "*2\r\n";
+          reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+          reply += "*" + to_string(v.size() * 2) + "\r\n";
+          for (auto [t, h] : v)
+          {
+              reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+              reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+          }
       }
       send(client_fd, reply.c_str(), reply.size(), 0);
     }else
