@@ -581,13 +581,11 @@ public:
     string Key = cmd[4];
     string ID = cmd[5];
 
-    int timeoutSeconds = Time > 0 ? Time : 1000;
+    int timeoutSeconds = Time;
 
-    if(ID == "$"){
-      const char *timeoutReply = "*-1\r\n";
-      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-    }else{
-      unique_lock<mutex> lock(mtx);
+    
+
+    unique_lock<mutex> lock(mtx);
 
     bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
@@ -638,9 +636,6 @@ public:
       const char *timeoutReply = "*-1\r\n";
       send(client_fd, timeoutReply, strlen(timeoutReply), 0);
     }
-    }
-
-    
 
     
     
