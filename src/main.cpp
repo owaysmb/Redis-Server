@@ -587,8 +587,8 @@ public:
 
     bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
-     auto it = Streams.find(Key);
-    if (it == Streams.end() || it->second.empty()) return false;
+    auto it = Streams.find(Key);
+    // if (it == Streams.end() || it->second.empty()) return false;
 
     string lastID = it->second.back().first;
     stringstream ss1(lastID), ss2(ID);
