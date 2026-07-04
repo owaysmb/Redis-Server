@@ -375,7 +375,7 @@ public:
         lock_guard<mutex> lock(mtx);
         Streams[streamKey].push_back({ID, TempMap});
       }
-      cv.notify_one();
+      cv.notify_all();
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
@@ -414,7 +414,7 @@ public:
               lock_guard<mutex> lock(mtx);
               Streams[streamKey].push_back({ID, TempMap});
           }
-          cv.notify_one();
+          cv.notify_all();
           string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
           send(client_fd, reply.c_str(), reply.size(), 0);
       };
