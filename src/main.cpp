@@ -569,23 +569,30 @@ public:
     if (cmd.size() < 5)
       return;
 
-    string Time = cmd[2];
+    int Time = stoi(cmd[2]);
     string Key = cmd[4];
     string ID = cmd[5];
 
-    int timeoutSeconds = stoi(Time) > 0 ? stoi(Time) : 1;
+    int timeoutSeconds = Time > 0 ? Time : 1;
 
     unique_lock<mutex> lock(mtx);
 
     bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
                              {
-        
-        auto it = Streams.find(Key);
-        return it != Streams.end() && !it->second.empty(); });
+      auto it = Streams.find(Key);
+      return it != Streams.end() && !it->second.empty();
 
-    if (found)
-    {
-      string reply = "*" + to_string(Key.size()) + "\r\n";
+      string lastID = it->second.back().first;
+      stringstream ss1(lastID), ss2(ID);
+      string ms1, seq1, ms2, seq2;
+      getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
+      getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
+      return stol(ms1) > stol(ms2) || 
+            (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2)); 
+    });
+
+    if(found){
+      string reply = "*1\r\n";
       reply += "*2\r\n";
       reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
       reply += "*1\r\n";
@@ -606,12 +613,14 @@ public:
         }
       }
       send(client_fd, reply.c_str(), reply.size(), 0);
-    }
-    else
+    }else
     {
       const char *timeoutReply = "*-1\r\n";
       send(client_fd, timeoutReply, strlen(timeoutReply), 0);
     }
+
+    
+    
   }
 };
 
@@ -649,7 +658,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXADD(cmd, client_fd);
   else if (cmd[0] == "XRANGE" || cmd[0] == "xrange")
     storage.handleXRANGE(cmd, client_fd);
-  else if (cmd[0] == "XREAD" && cmd[1] != "block" || cmd[0] == "XREAD" && cmd[1] != "BLOCK" )
+  else if (cmd[0] == "XREAD" && cmd[1] != "block" || cmd[0] == "XREAD" && cmd[1] != "BLOCK")
     storage.handleXREAD(cmd, client_fd);
   else if (cmd[0] == "XREAD" && cmd[1] == "block" || cmd[0] == "XREAD" && cmd[1] == "BLOCK")
     storage.handleXREAD_BLOCK(cmd, client_fd);
