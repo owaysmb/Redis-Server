@@ -574,7 +574,7 @@ public:
   void handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
   {
 
-    if (cmd.size() < 5)
+    if (cmd.size() < 6)
       return;
 
     int Time = stoi(cmd[2]);
