@@ -586,18 +586,18 @@ public:
 
     if (Time == 0)
     {
-      cv.wait(lock, [&]()
-              {
-                auto it = Streams.find(Key);
-                if (it == Streams.end() || it->second.empty()) return false;
-                string lastID = it->second.back().first;
-                string ms1, seq1, ms2, seq2;
-                stringstream ss1(lastID), ss2(ID);
-                getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-                getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-                return stol(ms1) > stol(ms2) || 
-                      (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2)); 
-              });
+      string thresholdID;
+
+if (ID == "$") {
+    auto it = Streams.find(Key);
+    if (it != Streams.end() && !it->second.empty()) {
+        thresholdID = it->second.back().first;  // last entry's ID right now
+    } else {
+        thresholdID = "0-0";  // stream empty, accept anything new
+    }
+} else {
+    thresholdID = ID;  // use the literal ID given
+}
       }
     else
     {
