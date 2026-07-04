@@ -410,13 +410,13 @@ public:
       }
       auto acceptEntry = [&]()
       {
-          {
-              lock_guard<mutex> lock(mtx);
-              Streams[streamKey].push_back({ID, TempMap});
-          }
-          cv.notify_all();
-          string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-          send(client_fd, reply.c_str(), reply.size(), 0);
+        {
+          lock_guard<mutex> lock(mtx);
+          Streams[streamKey].push_back({ID, TempMap});
+        }
+        cv.notify_all();
+        string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
       };
 
       if (stol(ms) > stol(ms2))
@@ -582,13 +582,27 @@ public:
     string ID = cmd[5];
 
     int timeoutSeconds = Time;
-
-    
-
     unique_lock<mutex> lock(mtx);
 
-    bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
-                             {
+    if (Time == 0)
+    {
+      cv.wait(lock, [&]()
+              {
+                auto it = Streams.find(Key);
+                if (it == Streams.end() || it->second.empty()) return false;
+                string lastID = it->second.back().first;
+                string ms1, seq1, ms2, seq2;
+                stringstream ss1(lastID), ss2(ID);
+                getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
+                getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
+                return stol(ms1) > stol(ms2) || 
+                      (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2)); 
+              });
+      }
+    else
+    {
+      bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
+                               {
     auto it = Streams.find(Key);
     if (it == Streams.end() || it->second.empty()) return false;
 
@@ -598,47 +612,49 @@ public:
     getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
     getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
     return stol(ms1) > stol(ms2) || 
-           (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
-    });
+           (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2)); });
 
-    if(found){
-      string reply = "*1\r\n";
-      reply += "*2\r\n";
-      reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
-      reply += "*1\r\n";
-
-      auto it = Streams.find(Key);
-      if (it == Streams.end())
-        return;
-
-      for (auto [k, v] : it->second)
+      if (found)
       {
+        string reply = "*1\r\n";
+        reply += "*2\r\n";
+        reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
+        reply += "*1\r\n";
+
+        auto it = Streams.find(Key);
+        if (it == Streams.end())
+          return;
+
+        for (auto [k, v] : it->second)
+        {
           stringstream ss1(k), ss2(ID);
           string ms1, seq1, ms2, seq2;
-          getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-          getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-          bool greater = stol(ms1) > stol(ms2) || 
-                        (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
-          if (!greater) continue;
+          getline(ss1, ms1, '-');
+          getline(ss1, seq1, '-');
+          getline(ss2, ms2, '-');
+          getline(ss2, seq2, '-');
+          bool greater = stol(ms1) > stol(ms2) ||
+                         (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
+          if (!greater)
+            continue;
 
           reply += "*2\r\n";
           reply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
           reply += "*" + to_string(v.size() * 2) + "\r\n";
           for (auto [t, h] : v)
           {
-              reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
-              reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+            reply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+            reply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
           }
+        }
+        send(client_fd, reply.c_str(), reply.size(), 0);
       }
-      send(client_fd, reply.c_str(), reply.size(), 0);
-    }else
-    {
-      const char *timeoutReply = "*-1\r\n";
-      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+      else
+      {
+        const char *timeoutReply = "*-1\r\n";
+        send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+      }
     }
-
-    
-    
   }
 };
 
@@ -680,7 +696,6 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXREAD_BLOCK(cmd, client_fd);
   else if (cmd[0] == "XREAD")
     storage.handleXREAD(cmd, client_fd);
-  
 }
 
 void handleCLient(int client_fd)
