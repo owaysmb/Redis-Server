@@ -372,6 +372,7 @@ public:
     auto IsEmpty = [&]()
     {
       Streams[streamKey].push_back({ID, TempMap});
+      cv.notify_one();
       string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     };
@@ -407,6 +408,7 @@ public:
       auto acceptEntry = [&]()
       {
         Streams[streamKey].push_back({ID, TempMap});
+        cv.notify_one();
         string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
       };
