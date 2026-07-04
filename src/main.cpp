@@ -581,11 +581,11 @@ public:
     string Key = cmd[4];
     string ID = cmd[5];
 
-    int timeoutSeconds = Time > 0 ? Time : 1;
+    int timeoutSeconds = Time > 0 ? Time : 1000;
 
     unique_lock<mutex> lock(mtx);
 
-    bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
+    bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
     auto it = Streams.find(Key);
     if (it == Streams.end() || it->second.empty()) return false;
