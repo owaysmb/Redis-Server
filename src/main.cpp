@@ -579,16 +579,16 @@ public:
 
     bool found = cv.wait_for(lock, chrono::seconds(timeoutSeconds), [&]()
                              {
-      auto it = Streams.find(Key);
-      return it != Streams.end() && !it->second.empty();
+     auto it = Streams.find(Key);
+    if (it == Streams.end() || it->second.empty()) return false;
 
-      string lastID = it->second.back().first;
-      stringstream ss1(lastID), ss2(ID);
-      string ms1, seq1, ms2, seq2;
-      getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-      getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-      return stol(ms1) > stol(ms2) || 
-            (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2)); 
+    string lastID = it->second.back().first;
+    stringstream ss1(lastID), ss2(ID);
+    string ms1, seq1, ms2, seq2;
+    getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
+    getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
+    return stol(ms1) > stol(ms2) || 
+           (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
     });
 
     if(found){
