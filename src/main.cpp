@@ -583,7 +583,11 @@ public:
 
     int timeoutSeconds = Time > 0 ? Time : 1000;
 
-    unique_lock<mutex> lock(mtx);
+    if(ID == "$"){
+      const char *timeoutReply = "*-1\r\n";
+      send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+    }else{
+      unique_lock<mutex> lock(mtx);
 
     bool found = cv.wait_for(lock, chrono::milliseconds(timeoutSeconds), [&]()
                              {
@@ -634,6 +638,9 @@ public:
       const char *timeoutReply = "*-1\r\n";
       send(client_fd, timeoutReply, strlen(timeoutReply), 0);
     }
+    }
+
+    
 
     
     
