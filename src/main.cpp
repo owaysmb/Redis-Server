@@ -744,6 +744,14 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
       }
     }
+
+    for (auto &&i : Q)
+    {
+      handleCommand(i,client_fd);
+    }
+    Q.clear();
+    Multi = false;
+
   }
 
   
