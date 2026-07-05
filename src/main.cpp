@@ -675,22 +675,21 @@ public:
 
   void handleINCR(vector<string> &cmd, int client_fd)
   {
-    string Key = cmd[1];
+      string Key = cmd[1];
 
-    auto it = Database.find(Key);
+      auto it = Database.find(Key);
 
-    if(it == Database.end()){
-      Database[Key] = "1";
-      const char *reply = "*1\r\n";
-      send(client_fd, reply, strlen(reply), 0);
-    }else{
-      int v = stoi(it->second);
-      v++;
-      Database[Key] = to_string(v);
-      string reply = Database[Key];
-      send(client_fd, reply.c_str(), reply.size(), 0);
-    }
-
+      if (it == Database.end()) {
+          Database[Key] = "1";
+          string reply = ":1\r\n";
+          send(client_fd, reply.c_str(), reply.size(), 0);
+      } else {
+          int v = stoi(it->second);
+          v++;
+          Database[Key] = to_string(v);
+          string reply = ":" + Database[Key] + "\r\n";
+          send(client_fd, reply.c_str(), reply.size(), 0);
+      }
   }
 };
 
