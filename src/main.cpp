@@ -49,7 +49,12 @@ vector<string> RESP_parse(const string &message)
   }
   return result;
 }
-
+bool isNumber(const string &str)
+{
+  if (str.empty())
+    return false;
+  return str.find_first_not_of("0123456789") == std::string::npos;
+}
 class ListStorage
 {
 private:
@@ -675,21 +680,31 @@ public:
 
   void handleINCR(vector<string> &cmd, int client_fd)
   {
-      string Key = cmd[1];
+    string Key = cmd[1];
+    string value = Database[Key];
+    auto it = Database.find(Key);
 
-      auto it = Database.find(Key);
-
-      if (it == Database.end()) {
-          Database[Key] = "1";
-          string reply = ":1\r\n";
-          send(client_fd, reply.c_str(), reply.size(), 0);
-      } else {
-          int v = stoi(it->second);
-          v++;
-          Database[Key] = to_string(v);
-          string reply = ":" + Database[Key] + "\r\n";
-          send(client_fd, reply.c_str(), reply.size(), 0);
+    if (it == Database.end())
+    {
+      value = "1";
+      string reply = ":1\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+    else {
+      if (isNumber(value)){
+        int v = stoi(it->second);
+        v++;
+        value = to_string(v);
+        string reply = ":" + value + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      }else
+      {
+        string err = "ERR value is not an integer or out of range";
+        string reply = ":" + err + "\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
       }
+    }
+    
   }
 };
 
@@ -732,7 +747,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
   else if (cmd[0] == "XREAD")
     storage.handleXREAD(cmd, client_fd);
   else if (cmd[0] == "INCR")
-    storage.handleINCR(cmd,client_fd);
+    storage.handleINCR(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
