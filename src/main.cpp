@@ -706,6 +706,12 @@ public:
       }
     }
   }
+
+  void handleMULTI(vector<string> &cmd, int client_fd)
+  {
+    const char* reply = "+OK\r\n";
+    send(client_fd,reply,strlen(reply),0);
+  }
 };
 
 ListStorage storage;
@@ -748,6 +754,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXREAD(cmd, client_fd);
   else if (cmd[0] == "INCR")
     storage.handleINCR(cmd, client_fd);
+  else if(cmd[0] == "MULTI")
+    storage.handleMULTI(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
