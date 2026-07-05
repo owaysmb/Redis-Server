@@ -712,22 +712,21 @@ public:
     }
   }
 
+  void handleQueuing(vector<string> &cmd, int client_fd){
+
+    if(!ExecCounts && Multi){
+      if(cmd[0] == "EXEC") return;
+      const char *reply = "+QUEUED\r\n";
+      send(client_fd, reply, strlen(reply), 0);
+    }
+  }
+
   void handleMULTI(vector<string> &cmd, int client_fd)
   {
     Multi = true;
     const char *reply = "+OK\r\n";
     send(client_fd, reply, strlen(reply), 0);
-
-    while(!ExecCounts){
-      if(cmd[0] == "EXEC") break;
-      else{
-        const char *reply = "+QUEUED\r\n";
-        send(client_fd, reply, strlen(reply), 0);
-      }
-      
-      
-    }
-
+    handleQueuing(cmd,client_fd);
   }
 
   void handleEXEC(vector<string> &cmd, int client_fd)
@@ -750,6 +749,9 @@ public:
       }
     }
   }
+
+  
+
 };
 
 ListStorage storage;
@@ -786,7 +788,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXADD(cmd, client_fd);
   else if (cmd[0] == "XRANGE" || cmd[0] == "xrange")
     storage.handleXRANGE(cmd, client_fd);
-  else if (cmd[0] == "XREAD" && cmd[1] == "block" || cmd[0] == "XREAD" && cmd[1] == "BLOCK")
+  else if (cmd[0] == "XREAD" && cmd[1] == "block" 
+    || cmd[0] == "XREAD" && cmd[1] == "BLOCK")
     storage.handleXREAD_BLOCK(cmd, client_fd);
   else if (cmd[0] == "XREAD")
     storage.handleXREAD(cmd, client_fd);
