@@ -745,9 +745,16 @@ public:
       }
     }
 
-    for (auto &&i : Q)
+    for (auto &&v : Q)
     {
-      handleCommand(i,client_fd);
+      for (int i = 0; i < v.size(); i++)
+      {
+        if(v[0] == "GET") {
+          string reply = "*-1\r\n";
+          send(client_fd, reply.c_str(), reply.size(), 0);
+        }
+      }
+      
     }
     Q.clear();
     Multi = false;
