@@ -17,6 +17,8 @@
 #include <mutex>
 #include <unordered_map>
 #include <cmath>
+#include <queue>
+
 using namespace std;
 
 vector<string> RESP_parse(const string &message)
@@ -65,6 +67,7 @@ private:
   mutex mtx;
   condition_variable cv;
   bool MultiExc = false;
+  queue<string> Q;
 
 public:
   void handlePing(vector<string> &cmd, int client_fd)
@@ -722,6 +725,14 @@ public:
       string reply = "-ERR EXEC without MULTI\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     }
+    else
+    {
+      if (Q.empty())
+      {
+        string reply = "*0\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      }
+    }
   }
 };
 
@@ -768,7 +779,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
   else if (cmd[0] == "MULTI")
     storage.handleMULTI(cmd, client_fd);
   else if (cmd[0] == "EXEC")
-    storage.handleEXEC(cmd,client_fd);
+    storage.handleEXEC(cmd, client_fd);
 }
 
 void handleCLient(int client_fd)
