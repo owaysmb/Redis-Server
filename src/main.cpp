@@ -66,7 +66,7 @@ private:
   map<string, vector<pair<string, map<string, string>>>> Streams;
   mutex mtx;
   condition_variable cv;
-  bool MultiExc = false;
+  bool Multi = false;
   queue<string> Q;
   int ExecCounts = 0;
 
@@ -714,15 +714,21 @@ public:
 
   void handleMULTI(vector<string> &cmd, int client_fd)
   {
-    MultiExc = true;
+    Multi = true;
     const char *reply = "+OK\r\n";
     send(client_fd, reply, strlen(reply), 0);
+
+    while(!ExecCounts){
+      const char *reply = "+QUEUED\r\n";
+      send(client_fd, reply, strlen(reply), 0);
+    }
+
   }
 
   void handleEXEC(vector<string> &cmd, int client_fd)
   {
     ExecCounts++;
-    if (!MultiExc)
+    if (!Multi)
     {
       string reply = "-ERR EXEC without MULTI\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
