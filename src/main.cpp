@@ -747,13 +747,12 @@ public:
     
     for (auto &&v : Q)
     {
-      for (int i = 0; i < v.size(); i++)
-      {
+     
         if (v[0] == "GET") {
           const char *nullReply = "$-1\r\n";
           send(client_fd, nullReply, strlen(nullReply), 0);
         }
-      }
+      
       
       
     }
