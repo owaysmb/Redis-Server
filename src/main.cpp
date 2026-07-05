@@ -64,6 +64,7 @@ private:
   map<string, vector<pair<string, map<string, string>>>> Streams;
   mutex mtx;
   condition_variable cv;
+  bool MultiExc = false;
 
 public:
   void handlePing(vector<string> &cmd, int client_fd)
@@ -709,8 +710,18 @@ public:
 
   void handleMULTI(vector<string> &cmd, int client_fd)
   {
-    const char* reply = "+OK\r\n";
-    send(client_fd,reply,strlen(reply),0);
+    MultiExc = true;
+    const char *reply = "+OK\r\n";
+    send(client_fd, reply, strlen(reply), 0);
+  }
+
+  void handleEXEC(vector<string> &cmd, int client_fd)
+  {
+    if (!MultiExc)
+    {
+      string reply = "-ERR EXEC without MULTI\r\n";
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
   }
 };
 
@@ -754,8 +765,10 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXREAD(cmd, client_fd);
   else if (cmd[0] == "INCR")
     storage.handleINCR(cmd, client_fd);
-  else if(cmd[0] == "MULTI")
-    storage.handleMULTI(cmd,client_fd);
+  else if (cmd[0] == "MULTI")
+    storage.handleMULTI(cmd, client_fd);
+  else if (cmd[0] == "EXEC")
+    storage.handleEXEC(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
