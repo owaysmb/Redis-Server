@@ -691,7 +691,7 @@ public:
     }
     else
     {
-      if (isNumber(value))
+      if (isNumber(Database[Key]))
       {
         int v = stoi(it->second);
         v++;
