@@ -20,6 +20,7 @@
 #include <queue>
 
 using namespace std;
+bool Multi = false;
 
 vector<string> RESP_parse(const string &message)
 {
@@ -66,7 +67,6 @@ private:
   map<string, vector<pair<string, map<string, string>>>> Streams;
   mutex mtx;
   condition_variable cv;
-  bool Multi = false;
   queue<string> Q;
   int ExecCounts = 0;
 
@@ -713,14 +713,9 @@ public:
   }
 
   void handleQueuing(vector<string> &cmd, int client_fd){
-
-    if(!ExecCounts && Multi){
-      if(cmd[0] == "EXEC") return;
-      else if(cmd.size() > 0){
-        const char *reply = "+QUEUED\r\n";
-        send(client_fd, reply, strlen(reply), 0);
-      }
-    }
+      const char *reply = "+QUEUED\r\n";
+      send(client_fd, reply, strlen(reply), 0);
+      return;
   }
 
   void handleMULTI(vector<string> &cmd, int client_fd)
@@ -728,7 +723,6 @@ public:
     Multi = true;
     const char *reply = "+OK\r\n";
     send(client_fd, reply, strlen(reply), 0);
-    handleQueuing(cmd,client_fd);
   }
 
   void handleEXEC(vector<string> &cmd, int client_fd)
@@ -800,7 +794,10 @@ void handleCommand(vector<string> &cmd, int client_fd)
   else if (cmd[0] == "MULTI")
     storage.handleMULTI(cmd, client_fd);
   else if (cmd[0] == "EXEC")
-    storage.handleEXEC(cmd, client_fd);
+    storage.handleEXEC(cmd, client_fd); 
+  else if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
+    storage.handleQueuing(cmd,client_fd);
+  
 }
 
 void handleCLient(int client_fd)
