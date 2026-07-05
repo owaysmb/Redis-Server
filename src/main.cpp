@@ -745,6 +745,12 @@ public:
       }
     }
     
+    for (auto &&v : Q)
+    {
+      if (v[0] == "GET") handleGET(v, client_fd);
+    }
+    
+
     Q.clear();
     Multi = false;
 
@@ -773,8 +779,6 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleMULTI(cmd, client_fd);
   else if (cmd[0] == "EXEC")
     storage.handleEXEC(cmd, client_fd); 
-  else if(Multi && cmd[0] == "GET")
-    storage.handleGET(cmd,client_fd);
   else if (cmd[0] == "PING" || cmd[0] == "ping")
     storage.handlePing(cmd, client_fd);
   else if (cmd[0] == "ECHO" || cmd[0] == "echo")
