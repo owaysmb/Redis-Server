@@ -681,30 +681,30 @@ public:
   void handleINCR(vector<string> &cmd, int client_fd)
   {
     string Key = cmd[1];
-    string value = Database[Key];
     auto it = Database.find(Key);
 
     if (it == Database.end())
     {
-      value = "1";
+      Database[Key] = "1";
       string reply = ":1\r\n";
       send(client_fd, reply.c_str(), reply.size(), 0);
     }
-    else {
-      if (isNumber(value)){
+    else
+    {
+      if (isNumber(value))
+      {
         int v = stoi(it->second);
         v++;
-        value = to_string(v);
-        string reply = ":" + value + "\r\n";
+        it->second = to_string(v);
+        string reply = ":" + it->second + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-      }else
+      }
+      else
       {
-        string err = "ERR value is not an integer or out of range";
-        string reply = "-" + err + "\r\n";
+        string reply = "-ERR value is not an integer or out of range\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
       }
     }
-    
   }
 };
 
