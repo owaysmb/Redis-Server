@@ -712,11 +712,9 @@ public:
     }
   }
 
-  void handleQueuing(vector<string> &cmd, int client_fd){
-      const char *reply = "+QUEUED\r\n";
-      send(client_fd, reply, strlen(reply), 0);
-      return;
-  }
+  // void handleQueuing(vector<string> &cmd, int client_fd){
+      
+  // }
 
   void handleMULTI(vector<string> &cmd, int client_fd)
   {
@@ -758,9 +756,12 @@ void handleCommand(vector<string> &cmd, int client_fd)
   if (cmd.empty())
     return;
 
-  if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
-    storage.handleQueuing(cmd,client_fd);
+  if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI"){
+    const char *reply = "+QUEUED\r\n";
+    send(client_fd, reply, strlen(reply), 0);
     return;  
+  }
+    
 
   
   if (cmd[0] == "MULTI")
