@@ -747,7 +747,12 @@ public:
     
     for (auto &&v : Q)
     {
-      if (v[0] == "GET") handleGET(v, client_fd);
+      for (int i = 0; i < v.size(); i++)
+      {
+        if (v[0] == "GET") handleGET(v, client_fd);
+      }
+      
+      
     }
     
 
