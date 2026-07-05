@@ -715,7 +715,6 @@ public:
   void handleQueuing(vector<string> &cmd, int client_fd){
       const char *reply = "+QUEUED\r\n";
       send(client_fd, reply, strlen(reply), 0);
-      return;
   }
 
   void handleMULTI(vector<string> &cmd, int client_fd)
