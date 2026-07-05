@@ -44,7 +44,7 @@ private:
     bool Multi = false;
 
 public:
-    void dispatch(vector<string> &cmd, int client_fd)
+    void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     {
         if (cmd.empty())
             return;
@@ -102,13 +102,13 @@ public:
             handleINCR(cmd, client_fd);
     }
 
-    void handlePing(vector<string> &cmd, int client_fd)
+    void ListStorage::handlePing(vector<string> &cmd, int client_fd)
     {
         const char *response = "+PONG\r\n";
         send(client_fd, response, strlen(response), 0);
     }
 
-    void handleEcho(vector<string> &cmd, int client_fd)
+    void ListStorage::handleEcho(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() > 1)
         {
@@ -117,7 +117,7 @@ public:
         }
     }
 
-    void handleSET(vector<string> &cmd, int client_fd)
+    void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 3)
             return;
@@ -145,7 +145,7 @@ public:
         send(client_fd, response, strlen(response), 0);
     }
 
-    void handleGET(vector<string> &cmd, int client_fd)
+    void ListStorage::handleGET(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 2)
             return;
@@ -172,7 +172,7 @@ public:
         }
     }
 
-    void handleRPUSH(vector<string> &cmd, int client_fd)
+    void ListStorage::handleRPUSH(vector<string> &cmd, int client_fd)
 
     {
 
@@ -194,7 +194,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleLPUSH(vector<string> &cmd, int client_fd)
+    void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
     {
 
         if (cmd.size() < 3)
@@ -215,7 +215,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleLRANGE(vector<string> &cmd, int client_fd)
+    void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 4)
             return;
@@ -265,7 +265,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleLLEN(vector<string> &cmd, int client_fd)
+    void ListStorage::handleLLEN(vector<string> &cmd, int client_fd)
     {
 
         if (cmd.size() < 2)
@@ -284,7 +284,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleLPOP(vector<string> &cmd, int client_fd)
+    void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 2)
             return;
@@ -324,7 +324,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleBLPOP(vector<string> &cmd, int client_fd)
+    void ListStorage::handleBLPOP(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 3)
             return;
@@ -357,7 +357,7 @@ public:
         }
     }
 
-    void handleTYPE(vector<string> &cmd, int client_fd)
+    void ListStorage::handleTYPE(vector<string> &cmd, int client_fd)
     {
 
         if (cmd.size() < 2)
@@ -381,7 +381,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleXADD(vector<string> &cmd, int client_fd)
+    void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 5)
             return;
@@ -500,7 +500,7 @@ public:
         }
     }
 
-    void handleXRANGE(vector<string> &cmd, int client_fd)
+    void ListStorage::handleXRANGE(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 4)
             return;
@@ -568,7 +568,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleXREAD(vector<string> &cmd, int client_fd)
+    void ListStorage::handleXREAD(vector<string> &cmd, int client_fd)
     {
 
         if (cmd.size() < 4)
@@ -612,7 +612,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
-    void handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
+    void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
     {
         if (cmd.size() < 6)
             return;
@@ -714,7 +714,7 @@ public:
         }
     }
 
-    void handleINCR(vector<string> &cmd, int client_fd)
+    void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
     {
         string Key = cmd[1];
         auto it = Database.find(Key);
@@ -743,21 +743,21 @@ public:
         }
     }
 
-    void handleQueuing(vector<string> &cmd, int client_fd)
+    void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
     {
         Q.push_back(cmd);
         const char *reply = "+QUEUED\r\n";
         send(client_fd, reply, strlen(reply), 0);
     }
 
-    void handleMULTI(vector<string> &cmd, int client_fd)
+    void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
     {
         Multi = true;
         const char *reply = "+OK\r\n";
         send(client_fd, reply, strlen(reply), 0);
     }
 
-    void handleEXEC(vector<string> &cmd, int client_fd)
+    void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     {
         ExecCounts++;
         if (!Multi)
