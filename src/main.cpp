@@ -19,17 +19,9 @@
 #include <cmath>
 #include <queue>
 #include "Storage.h"
-#include<RespParser.h>
+#include "RespParser.h"
 
 using namespace std;
-bool Multi = false;
-
-bool isNumber(const string &str)
-{
-  if (str.empty())
-    return false;
-  return str.find_first_not_of("0123456789") == std::string::npos;
-}
 
 ListStorage storage;
 

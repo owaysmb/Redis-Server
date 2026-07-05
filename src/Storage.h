@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -20,15 +19,10 @@
 #include <cmath>
 #include <queue>
 
-
 using namespace std;
-bool Multi = false;
-bool isNumber(const string &str)
-{
-  if (str.empty())
-    return false;
-  return str.find_first_not_of("0123456789") == std::string::npos;
-}
+
+bool isNumber(const string &str);
+
 class ListStorage{
 private:
   unordered_map<string, chrono::steady_clock::time_point> ExpiryTimes;
