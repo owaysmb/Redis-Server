@@ -745,19 +745,7 @@ public:
       }
     }
     
-    for (auto &&v : Q)
-    {
-     
-        if (v[0] == "GET") {
-          const char *nullReply = "$-1\r\n";
-          send(client_fd, nullReply, strlen(nullReply), 0);
-        }
-      
-      
-      
-    }
     
-
     Q.clear();
     Multi = false;
 
@@ -776,8 +764,15 @@ void handleCommand(vector<string> &cmd, int client_fd)
     return;
 
   if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI"){
-    storage.handleQueuing(cmd,client_fd);
-    return;  
+    if(cmd[0] == "GET"){
+      const char *nullReply = "$-1\r\n";
+      send(client_fd, nullReply, strlen(nullReply), 0);
+      return;
+    }else{
+      storage.handleQueuing(cmd,client_fd);
+      return; 
+    }
+     
   }
     
 
