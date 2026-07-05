@@ -700,7 +700,7 @@ public:
       }else
       {
         string err = "ERR value is not an integer or out of range";
-        string reply = ":" + err + "\r\n";
+        string reply = "-" + err + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
       }
     }
