@@ -68,6 +68,7 @@ private:
   condition_variable cv;
   bool MultiExc = false;
   queue<string> Q;
+  int ExecCounts = 0;
 
 public:
   void handlePing(vector<string> &cmd, int client_fd)
@@ -720,6 +721,7 @@ public:
 
   void handleEXEC(vector<string> &cmd, int client_fd)
   {
+    ExecCounts++;
     if (!MultiExc)
     {
       string reply = "-ERR EXEC without MULTI\r\n";
@@ -727,9 +729,12 @@ public:
     }
     else
     {
-      if (Q.empty())
+      if (Q.empty() && ExecCounts == 1)
       {
         string reply = "*0\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+      }else{
+        string reply = "-ERR EXEC without MULTI\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
       }
     }
