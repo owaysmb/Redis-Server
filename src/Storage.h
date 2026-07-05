@@ -33,7 +33,7 @@ private:
   condition_variable cv;
   vector<vector<string>> Q;
   int ExecCounts = 0;
-
+  bool Multi = false;
 public:
   void handlePing(vector<string> &cmd, int client_fd);
   void handleEcho(vector<string> &cmd, int client_fd);
@@ -53,6 +53,7 @@ public:
   void handleINCR(vector<string> &cmd, int client_fd);
   void handleQueuing(vector<string> &cmd, int client_fd);
   void dispatch(vector<string> &cmd, int client_fd);
-  
+  void handleMULTI(vector<string> &cmd, int client_fd);
+  void handleEXEC(vector<string> &cmd, int client_fd);
 
 };

@@ -30,20 +30,6 @@ bool isNumber(const string &str)
     return str.find_first_not_of("0123456789") == std::string::npos;
 }
 
-class ListStorage
-{
-private:
-    unordered_map<string, chrono::steady_clock::time_point> ExpiryTimes;
-    unordered_map<string, string> Database;
-    unordered_map<string, vector<string>> List;
-    map<string, vector<pair<string, map<string, string>>>> Streams;
-    mutex mtx;
-    condition_variable cv;
-    vector<vector<string>> Q;
-    int ExecCounts = 0;
-    bool Multi = false;
-
-public:
     void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     {
         if (cmd.empty())
@@ -790,7 +776,3 @@ public:
         Multi = false;
     }
 
-
-
-
-};
