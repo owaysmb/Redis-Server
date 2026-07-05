@@ -687,6 +687,8 @@ public:
       int v = stoi(it->second);
       v++;
       Database[Key] = to_string(v);
+      string reply = Database[Key];
+      send(client_fd, reply.c_str(), reply.size(), 0);
     }
 
   }
