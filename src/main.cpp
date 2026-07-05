@@ -759,7 +759,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     return;
 
   if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
-    storage.handleQueuing(cmd,client_fd);  
+    storage.handleQueuing(cmd,client_fd);
+    return;  
 
   
   if (cmd[0] == "MULTI")
