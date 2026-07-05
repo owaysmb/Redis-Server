@@ -715,6 +715,7 @@ public:
   void handleQueuing(vector<string> &cmd, int client_fd){
       const char *reply = "+QUEUED\r\n";
       send(client_fd, reply, strlen(reply), 0);
+      return;
   }
 
   void handleMULTI(vector<string> &cmd, int client_fd)
@@ -760,7 +761,12 @@ void handleCommand(vector<string> &cmd, int client_fd)
   if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
     storage.handleQueuing(cmd,client_fd);  
 
-  if (cmd[0] == "PING" || cmd[0] == "ping")
+  
+  if (cmd[0] == "MULTI")
+    storage.handleMULTI(cmd, client_fd);
+  else if (cmd[0] == "EXEC")
+    storage.handleEXEC(cmd, client_fd); 
+  else if (cmd[0] == "PING" || cmd[0] == "ping")
     storage.handlePing(cmd, client_fd);
   else if (cmd[0] == "ECHO" || cmd[0] == "echo")
     storage.handleEcho(cmd, client_fd);
@@ -793,11 +799,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXREAD(cmd, client_fd);
   else if (cmd[0] == "INCR")
     storage.handleINCR(cmd, client_fd);
-  else if (cmd[0] == "MULTI")
-    storage.handleMULTI(cmd, client_fd);
-  else if (cmd[0] == "EXEC")
-    storage.handleEXEC(cmd, client_fd); 
- 
+  
   
 }
 
