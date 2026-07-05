@@ -719,8 +719,10 @@ public:
     send(client_fd, reply, strlen(reply), 0);
 
     while(!ExecCounts){
+      if(cmd[0] == "EXEC") break;
       const char *reply = "+QUEUED\r\n";
       send(client_fd, reply, strlen(reply), 0);
+      
     }
 
   }
