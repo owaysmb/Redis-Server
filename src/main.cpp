@@ -716,8 +716,10 @@ public:
 
     if(!ExecCounts && Multi){
       if(cmd[0] == "EXEC") return;
-      const char *reply = "+QUEUED\r\n";
-      send(client_fd, reply, strlen(reply), 0);
+      else if(cmd.size() > 0){
+        const char *reply = "+QUEUED\r\n";
+        send(client_fd, reply, strlen(reply), 0);
+      }
     }
   }
 
