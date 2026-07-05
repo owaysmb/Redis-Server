@@ -739,11 +739,19 @@ public:
       {
         string reply = "*0\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-      }else{
+      }else if(Q.empty() && ExecCounts > 1){
         string reply = "-ERR EXEC without MULTI\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
+      }else{
+        for (auto &&instruction : Q)
+        {
+          handleCommand(instruction,client_fd);
+        }
+        
       }
     }
+
+    
     
     
     Q.clear();
