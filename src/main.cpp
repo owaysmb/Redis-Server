@@ -572,9 +572,9 @@ public:
   }
 
   void handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
-{
+  {
     if (cmd.size() < 6)
-        return;
+      return;
 
     int Time = stoi(cmd[2]);
     string Key = cmd[4];
@@ -582,76 +582,114 @@ public:
 
     unique_lock<mutex> lock(mtx);
     string thresholdID;
-    if (ID == "$") {
-        auto it = Streams.find(Key);
-        if (it != Streams.end() && !it->second.empty())
-            thresholdID = it->second.back().first;
-        else
-            thresholdID = "0-0";
-    } else {
-        thresholdID = ID;
+    if (ID == "$")
+    {
+      auto it = Streams.find(Key);
+      if (it != Streams.end() && !it->second.empty())
+        thresholdID = it->second.back().first;
+      else
+        thresholdID = "0-0";
+    }
+    else
+    {
+      thresholdID = ID;
     }
 
-    auto predicate = [&]() {
-        auto it = Streams.find(Key);
-        if (it == Streams.end() || it->second.empty()) return false;
-        string lastID = it->second.back().first;
-        string ms1, seq1, ms2, seq2;
-        stringstream ss1(lastID), ss2(thresholdID);
-        getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-        getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-        return stol(ms1) > stol(ms2) ||
-               (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
+    auto predicate = [&]()
+    {
+      auto it = Streams.find(Key);
+      if (it == Streams.end() || it->second.empty())
+        return false;
+      string lastID = it->second.back().first;
+      string ms1, seq1, ms2, seq2;
+      stringstream ss1(lastID), ss2(thresholdID);
+      getline(ss1, ms1, '-');
+      getline(ss1, seq1, '-');
+      getline(ss2, ms2, '-');
+      getline(ss2, seq2, '-');
+      return stol(ms1) > stol(ms2) ||
+             (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
     };
 
-    auto buildReply = [&]() {
-        string reply = "*1\r\n";
-        reply += "*2\r\n";
-        reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
+    auto buildReply = [&]()
+    {
+      string reply = "*1\r\n";
+      reply += "*2\r\n";
+      reply += "$" + to_string(Key.size()) + "\r\n" + Key + "\r\n";
 
-        auto it = Streams.find(Key);
-        if (it == Streams.end()) return reply;
-
-        string entriesReply = "";
-        int count = 0;
-        for (auto [k, v] : it->second) {
-            string ms1, seq1, ms2, seq2;
-            stringstream ss1(k), ss2(thresholdID);
-            getline(ss1, ms1, '-'); getline(ss1, seq1, '-');
-            getline(ss2, ms2, '-'); getline(ss2, seq2, '-');
-            bool greater = stol(ms1) > stol(ms2) ||
-                           (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
-            if (!greater) continue;
-
-            count++;
-            entriesReply += "*2\r\n";
-            entriesReply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-            entriesReply += "*" + to_string(v.size() * 2) + "\r\n";
-            for (auto [t, h] : v) {
-                entriesReply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
-                entriesReply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
-            }
-        }
-        reply += "*" + to_string(count) + "\r\n";
-        reply += entriesReply;
+      auto it = Streams.find(Key);
+      if (it == Streams.end())
         return reply;
+
+      string entriesReply = "";
+      int count = 0;
+      for (auto [k, v] : it->second)
+      {
+        string ms1, seq1, ms2, seq2;
+        stringstream ss1(k), ss2(thresholdID);
+        getline(ss1, ms1, '-');
+        getline(ss1, seq1, '-');
+        getline(ss2, ms2, '-');
+        getline(ss2, seq2, '-');
+        bool greater = stol(ms1) > stol(ms2) ||
+                       (stol(ms1) == stol(ms2) && stol(seq1) > stol(seq2));
+        if (!greater)
+          continue;
+
+        count++;
+        entriesReply += "*2\r\n";
+        entriesReply += "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
+        entriesReply += "*" + to_string(v.size() * 2) + "\r\n";
+        for (auto [t, h] : v)
+        {
+          entriesReply += "$" + to_string(t.size()) + "\r\n" + t + "\r\n";
+          entriesReply += "$" + to_string(h.size()) + "\r\n" + h + "\r\n";
+        }
+      }
+      reply += "*" + to_string(count) + "\r\n";
+      reply += entriesReply;
+      return reply;
     };
 
-    if (Time == 0) {
-        cv.wait(lock, predicate);
+    if (Time == 0)
+    {
+      cv.wait(lock, predicate);
+      string reply = buildReply();
+      send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+    else
+    {
+      bool found = cv.wait_for(lock, chrono::milliseconds(Time), predicate);
+      if (found)
+      {
         string reply = buildReply();
         send(client_fd, reply.c_str(), reply.size(), 0);
-    } else {
-        bool found = cv.wait_for(lock, chrono::milliseconds(Time), predicate);
-        if (found) {
-            string reply = buildReply();
-            send(client_fd, reply.c_str(), reply.size(), 0);
-        } else {
-            const char *timeoutReply = "*-1\r\n";
-            send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-        }
+      }
+      else
+      {
+        const char *timeoutReply = "*-1\r\n";
+        send(client_fd, timeoutReply, strlen(timeoutReply), 0);
+      }
     }
-}
+  }
+
+  void handleINCR(vector<string> &cmd, int client_fd)
+  {
+    string Key = cmd[1];
+
+    auto it = Database.find(Key);
+
+    if(it == Database.end()){
+      Database[Key] = "1";
+      const char *reply = "*1\r\n";
+      send(client_fd, reply, strlen(reply), 0);
+    }else{
+      int v = stoi(it->second);
+      v++;
+      Database[Key] = to_string(v);
+    }
+
+  }
 };
 
 ListStorage storage;
@@ -692,6 +730,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleXREAD_BLOCK(cmd, client_fd);
   else if (cmd[0] == "XREAD")
     storage.handleXREAD(cmd, client_fd);
+  else if (cmd[0] == "INCR")
+    storage.handleINCR(cmd,client_fd);
 }
 
 void handleCLient(int client_fd)
