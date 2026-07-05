@@ -720,8 +720,11 @@ public:
 
     while(!ExecCounts){
       if(cmd[0] == "EXEC") break;
-      const char *reply = "+QUEUED\r\n";
-      send(client_fd, reply, strlen(reply), 0);
+      else{
+        const char *reply = "+QUEUED\r\n";
+        send(client_fd, reply, strlen(reply), 0);
+      }
+      
       
     }
 
