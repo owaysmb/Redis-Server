@@ -744,18 +744,7 @@ public:
         send(client_fd, reply.c_str(), reply.size(), 0);
       }
     }
-
-    for (auto &&v : Q)
-    {
-      for (int i = 0; i < v.size(); i++)
-      {
-        if(v[0] == "GET") {
-          string reply = "$-1\r\n";
-          send(client_fd, reply.c_str(), reply.size(), 0);
-        }
-      }
-      
-    }
+    
     Q.clear();
     Multi = false;
 
@@ -784,6 +773,8 @@ void handleCommand(vector<string> &cmd, int client_fd)
     storage.handleMULTI(cmd, client_fd);
   else if (cmd[0] == "EXEC")
     storage.handleEXEC(cmd, client_fd); 
+  else if(Multi && cmd[0] == "GET")
+    storage.handleGET(cmd,client_fd);
   else if (cmd[0] == "PING" || cmd[0] == "ping")
     storage.handlePing(cmd, client_fd);
   else if (cmd[0] == "ECHO" || cmd[0] == "echo")
