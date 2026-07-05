@@ -67,7 +67,7 @@ private:
   map<string, vector<pair<string, map<string, string>>>> Streams;
   mutex mtx;
   condition_variable cv;
-  queue<string> Q;
+  vector<vector<string>> Q;
   int ExecCounts = 0;
 
 public:
@@ -712,9 +712,11 @@ public:
     }
   }
 
-  // void handleQueuing(vector<string> &cmd, int client_fd){
-      
-  // }
+  void handleQueuing(vector<string> &cmd, int client_fd){
+    Q.push_back(cmd);
+    const char *reply = "+QUEUED\r\n";
+    send(client_fd, reply, strlen(reply), 0);
+  }
 
   void handleMULTI(vector<string> &cmd, int client_fd)
   {
@@ -757,8 +759,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
     return;
 
   if(Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI"){
-    const char *reply = "+QUEUED\r\n";
-    send(client_fd, reply, strlen(reply), 0);
+    storage.handleQueuing(cmd,client_fd);
     return;  
   }
     
