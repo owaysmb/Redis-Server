@@ -956,59 +956,14 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 
     ExecutingTransaction = false;
     
-    ExecCounts++;
-    if (!Multi)
-    {
-        string reply = "-ERR EXEC without MULTI\r\n";
-        if (ExecutingTransaction)
-        {
-            replyQueue.push_back(reply);
-        }
-        else
-        {
-            send(client_fd, reply.c_str(), reply.size(), 0);
-        }
-    }
-    else
-    {
-        if (Q.empty() && ExecCounts == 1)
-        {
-            string reply = "*0\r\n";
-            if (ExecutingTransaction)
-            {
-                replyQueue.push_back(reply);
-            }
-            else
-            {
-                send(client_fd, reply.c_str(), reply.size(), 0);
-            }
-        }
-        else if (Q.empty() && ExecCounts > 1)
-        {
-            string reply = "-ERR EXEC without MULTI\r\n";
-            if (ExecutingTransaction)
-            {
-                replyQueue.push_back(reply);
-            }
-            else
-            {
-                send(client_fd, reply.c_str(), reply.size(), 0);
-            }
-        }
-        else
-        {
-            for (int i = 0; i < Q.size(); i++)
-            {
-                dispatch(Q[i], client_fd);
-            }
-            for (int i = 0; i < replyQueue.size(); i++)
-            {
-                send(client_fd, replyQueue[i].c_str(), replyQueue[i].size(), 0);
-            }
-            
-        }
-        
-    }
+   string reply = "*" + to_string(replyQueue.size()) + "\r\n";
+
+for (auto &r : replyQueue)
+{
+    reply += r;
+}
+
+send(client_fd, reply.c_str(), reply.size(), 0);
 
     Q.clear();
     Multi = false;
