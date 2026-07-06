@@ -946,6 +946,7 @@ void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 {
+    Multi = false;
     ExecutingTransaction = true;
     replyQueue.clear();
 
@@ -955,16 +956,15 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     }
 
     ExecutingTransaction = false;
-    
-   string reply = "*" + to_string(replyQueue.size()) + "\r\n";
 
-for (auto &r : replyQueue)
-{
-    reply += r;
-}
+    string reply = "*" + to_string(replyQueue.size()) + "\r\n";
 
-send(client_fd, reply.c_str(), reply.size(), 0);
+    for (auto &r : replyQueue)
+    {
+        reply += r;
+    }
+
+    send(client_fd, reply.c_str(), reply.size(), 0);
 
     Q.clear();
-    Multi = false;
 }
