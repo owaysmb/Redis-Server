@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <cmath>
 #include <queue>
+#include "RespParser.h"
+#include <set>
 
 using namespace std;
 
@@ -28,6 +30,7 @@ struct ClientState
     int execCounts = 0;
     vector<string> replyQueue;
     bool executingTransaction = false;
+    set<string> watchedKeys;
 };
 
 extern unordered_map<int, ClientState> clients;

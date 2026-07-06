@@ -1010,15 +1010,26 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd){
     
     if(cmd.size() < 2)
         return;
+        string key = cmd[1];
+        clients[client_fd].watchedKeys.insert(key);
 
-        if(!clients[client_fd].multi){
+        if(clients[client_fd].multi){
             string reply = "-ERR WATCH inside MULTI is not allowed\r\n";
             send(client_fd, reply.c_str(), reply.size(), 0);
             return;
         }else{
-            string reply = "+OK\r\n";
-            send(client_fd, reply.c_str(), reply.size(), 0);
+
+            if(clients[client_fd].watchedKeys.find(key) != clients[client_fd].watchedKeys.end()){
+                string reply = "+OK\r\n";
+                send(client_fd, reply.c_str(), reply.size(), 0);
+                return;
+            }else{
+                string reply = "-ERR WATCH failed\r\n";
+                send(client_fd, reply.c_str(), reply.size(), 0);
+                return;
+            }
         }
+        
     
 
 }
