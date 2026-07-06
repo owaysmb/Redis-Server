@@ -77,6 +77,9 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleXREAD(cmd, client_fd);
     else if (cmd[0] == "INCR")
         handleINCR(cmd, client_fd);
+    else if (cmd[0] == "DISCARD")
+        handleDISCARD(cmd, client_fd);
+    
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
