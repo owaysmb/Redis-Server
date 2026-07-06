@@ -987,11 +987,10 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd){
 
-    clients[client_fd].multi = false;
-    clients[client_fd].queue.clear();
     
-    if(clients[client_fd].DiscardingTransaction){
-        clients[client_fd].DiscardingTransaction = false;
+    if(clients[client_fd].multi){
+        clients[client_fd].multi = false;
+        clients[client_fd].queue.clear();
         clients[client_fd].replyQueue.clear();
         const char *reply = "+OK\r\n";
         send(client_fd, reply, strlen(reply), 0);
