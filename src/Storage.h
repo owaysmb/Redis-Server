@@ -31,13 +31,12 @@ private:
     unordered_map<string, vector<string>> List;
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
-    mutex txMtx;
     condition_variable cv;
-    unordered_map<int, vector<vector<string>>> Q;
-    unordered_map<int, vector<string>> ExecResponses;
-    unordered_map<int, bool> Multi;
-    unordered_map<int, bool> capturing;
+    vector<vector<string>> Q;
+    int ExecCounts = 0;
+    bool Multi = false;
     string replyBuffer;
+    bool capturingMode = false;
 
 public:
     void handlePing(vector<string> &cmd, int client_fd);
@@ -60,6 +59,4 @@ public:
     void dispatch(vector<string> &cmd, int client_fd);
     void handleMULTI(vector<string> &cmd, int client_fd);
     void handleEXEC(vector<string> &cmd, int client_fd);
-    void sendReply(const string &reply, int client_fd);
-    void sendReply(const char *reply, int client_fd);
 };
