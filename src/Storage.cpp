@@ -946,9 +946,22 @@ void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 {
+    if (!clients[client_fd].multi)
+    {
+        string reply = "-ERR EXEC without MULTI\r\n";
+        if (clients[client_fd].executingTransaction)
+        {
+            clients[client_fd].replyQueue.push_back(reply);
+        }
+        else
+        {
+            send(client_fd, reply.c_str(), reply.size(), 0);
+        }
+        return;
+    }
+
     clients[client_fd].multi = false;
     clients[client_fd].executingTransaction = true;
-    
 
     for (auto &command : clients[client_fd].queue)
     {
