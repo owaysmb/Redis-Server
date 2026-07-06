@@ -120,7 +120,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     Database[cmd[1]] = cmd[2];
     const char *response = "+OK\r\n";
     send(client_fd, response, strlen(response), 0);
-    ExecResponses.push_back(response);
+    if (capturing) ExecResponses.push_back(response);
 }
 
 void ListStorage::handleGET(vector<string> &cmd, int client_fd)
@@ -142,13 +142,13 @@ void ListStorage::handleGET(vector<string> &cmd, int client_fd)
         string value = it->second;
         string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     }
     else
     {
         const char *nullReply = "$-1\r\n";
         send(client_fd, nullReply, strlen(nullReply), 0);
-        ExecResponses.push_back(nullReply);
+        if (capturing) ExecResponses.push_back(nullReply);
     }
 }
 
@@ -172,7 +172,7 @@ void ListStorage::handleRPUSH(vector<string> &cmd, int client_fd)
 
     string reply = ":" + to_string(response) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
@@ -194,7 +194,7 @@ void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
 
     string reply = ":" + to_string(response) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
@@ -228,7 +228,7 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     {
         const char *emptyArray = "*0\r\n";
         send(client_fd, emptyArray, strlen(emptyArray), 0);
-        ExecResponses.push_back(emptyArray);
+        if (capturing) ExecResponses.push_back(emptyArray);
         return;
     }
     if (start < 0)
@@ -247,7 +247,7 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleLLEN(vector<string> &cmd, int client_fd)
@@ -267,7 +267,7 @@ void ListStorage::handleLLEN(vector<string> &cmd, int client_fd)
     }
     string reply = ":" + to_string(length) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
@@ -297,7 +297,7 @@ void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
         }
 
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
         return;
     }
 
@@ -309,7 +309,7 @@ void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
 
     string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleBLPOP(vector<string> &cmd, int client_fd)
@@ -337,13 +337,13 @@ void ListStorage::handleBLPOP(vector<string> &cmd, int client_fd)
         reply += "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
 
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     }
     else
     {
         const char *timeoutReply = "*-1\r\n";
         send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-        ExecResponses.push_back(timeoutReply);
+        if (capturing) ExecResponses.push_back(timeoutReply);
     }
 }
 
@@ -369,7 +369,7 @@ void ListStorage::handleTYPE(vector<string> &cmd, int client_fd)
 
     string reply = "+" + result + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
@@ -393,7 +393,7 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
     {
         string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
         return;
     }
     for (int i = 3; i < cmd.size() - 1; i += 2)
@@ -411,14 +411,14 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
         cv.notify_all();
         string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     };
 
     auto rejectEntry = [&]()
     {
         string reply = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     };
 
     if (!Streams[streamKey].empty())
@@ -452,7 +452,7 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
             cv.notify_all();
             string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
             send(client_fd, reply.c_str(), reply.size(), 0);
-            ExecResponses.push_back(reply);
+            if (capturing) ExecResponses.push_back(reply);
         };
 
         if (stol(ms) > stol(ms2))
@@ -561,7 +561,7 @@ void ListStorage::handleXRANGE(vector<string> &cmd, int client_fd)
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleXREAD(vector<string> &cmd, int client_fd)
@@ -606,7 +606,7 @@ void ListStorage::handleXREAD(vector<string> &cmd, int client_fd)
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
@@ -694,7 +694,7 @@ void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
         cv.wait(lock, predicate);
         string reply = buildReply();
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     }
     else
     {
@@ -703,13 +703,13 @@ void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
         {
             string reply = buildReply();
             send(client_fd, reply.c_str(), reply.size(), 0);
-            ExecResponses.push_back(reply);
+            if (capturing) ExecResponses.push_back(reply);
         }
         else
         {
             const char *timeoutReply = "*-1\r\n";
             send(client_fd, timeoutReply, strlen(timeoutReply), 0);
-            ExecResponses.push_back(timeoutReply);
+            if (capturing) ExecResponses.push_back(timeoutReply);
         }
     }
 }
@@ -724,7 +724,7 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
         Database[Key] = "1";
         string reply = ":1\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        ExecResponses.push_back(reply);
+        if (capturing) ExecResponses.push_back(reply);
     }
     else
     {
@@ -735,13 +735,13 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
             it->second = to_string(v);
             string reply = ":" + it->second + "\r\n";
             send(client_fd, reply.c_str(), reply.size(), 0);
-            ExecResponses.push_back(reply);
+            if (capturing) ExecResponses.push_back(reply);
         }
         else
         {
             string reply = "-ERR value is not an integer or out of range\r\n";
             send(client_fd, reply.c_str(), reply.size(), 0);
-            ExecResponses.push_back(reply);
+            if (capturing) ExecResponses.push_back(reply);
         }
     }
 }
@@ -759,7 +759,7 @@ void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
     Multi = true;
     const char *reply = "+OK\r\n";
     send(client_fd, reply, strlen(reply), 0);
-    ExecResponses.push_back(reply);
+    if (capturing) ExecResponses.push_back(reply);
 }
 
 void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
