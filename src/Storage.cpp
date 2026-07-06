@@ -82,10 +82,23 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
 {
     const char *response = "+PONG\r\n";
+    sendReply(response, client_fd);
+}
+
+void ListStorage::sendReply(const string &reply, int client_fd)
+{
     if (capturing)
-        ExecResponses.push_back(response);
+        ExecResponses.push_back(reply);
     else
-        send(client_fd, response, strlen(response), 0);
+        send(client_fd, reply.c_str(), reply.size(), 0);
+}
+
+void ListStorage::sendReply(const char *reply, int client_fd)
+{
+    if (capturing)
+        ExecResponses.push_back(string(reply));
+    else
+        send(client_fd, reply, strlen(reply), 0);
 }
 
 void ListStorage::handleEcho(vector<string> &cmd, int client_fd)

@@ -33,7 +33,7 @@ private:
     mutex mtx;
     condition_variable cv;
     vector<vector<string>> Q;
-    vector<string> ExecResponses; 
+    vector<string> ExecResponses;
     int ExecCounts = 0;
     bool Multi = false;
     string replyBuffer;
@@ -60,4 +60,6 @@ public:
     void dispatch(vector<string> &cmd, int client_fd);
     void handleMULTI(vector<string> &cmd, int client_fd);
     void handleEXEC(vector<string> &cmd, int client_fd);
+    void sendReply(const string &reply, int client_fd);
+    void sendReply(const char *reply, int client_fd);
 };
