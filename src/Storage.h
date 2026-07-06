@@ -36,7 +36,7 @@ private:
     int ExecCounts = 0;
     bool Multi = false;
     string replyBuffer;
-    bool capturingMode = false;
+    vector<string> replyQueue;
 
 public:
     void handlePing(vector<string> &cmd, int client_fd);
