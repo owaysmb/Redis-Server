@@ -1011,7 +1011,7 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd){
     if(cmd.size() < 2)
         return;
 
-        if(clients[client_fd].multi){
+        if(!clients[client_fd].multi){
             string reply = "-ERR WATCH inside MULTI is not allowed\r\n";
             send(client_fd, reply.c_str(), reply.size(), 0);
             return;
