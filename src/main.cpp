@@ -23,6 +23,9 @@
 
 using namespace std;
 
+unordered_map<int, ClientState> clients;
+mutex clientsMutex;
+
 ListStorage storage;
 
 void handleCommand(vector<string> &cmd, int client_fd)
@@ -32,7 +35,11 @@ void handleCommand(vector<string> &cmd, int client_fd)
 
 void handleCLient(int client_fd)
 {
-  ListStorage clientStorage;
+  {
+    lock_guard<mutex> lock(clientsMutex);
+    clients[client_fd] = ClientState{};
+  }
+
   char pingBuffer[1024];
   while (true)
   {
@@ -45,10 +52,14 @@ void handleCLient(int client_fd)
     string message(pingBuffer);
 
     vector<string> cmd = RESP_parse(message);
-    clientStorage.dispatch(cmd, client_fd);
 
+    handleCommand(cmd, client_fd);
   }
   close(client_fd);
+  {
+    lock_guard<mutex> lock(clientsMutex);
+    clients.erase(client_fd);
+  }
 }
 
 int main()

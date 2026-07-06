@@ -35,7 +35,7 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     if (cmd.empty())
         return;
 
-    if (Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
+    if (clients[client_fd].multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
     {
         handleQueuing(cmd, client_fd);
         return;
@@ -82,9 +82,9 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
 {
     const char *response = "+PONG\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back("+PONG\r\n");
+        clients[client_fd].replyQueue.push_back("+PONG\r\n");
     }
     else
     {
@@ -97,9 +97,9 @@ void ListStorage::handleEcho(vector<string> &cmd, int client_fd)
     if (cmd.size() > 1)
     {
         string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -133,9 +133,9 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
 
     Database[cmd[1]] = cmd[2];
     const char *response = "+OK\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back("+OK\r\n");
+        clients[client_fd].replyQueue.push_back("+OK\r\n");
     }
     else
     {
@@ -161,9 +161,9 @@ void ListStorage::handleGET(vector<string> &cmd, int client_fd)
     {
         string value = it->second;
         string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -173,9 +173,9 @@ void ListStorage::handleGET(vector<string> &cmd, int client_fd)
     else
     {
         const char *nullReply = "$-1\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(nullReply);
+            clients[client_fd].replyQueue.push_back(nullReply);
         }
         else
         {
@@ -203,9 +203,9 @@ void ListStorage::handleRPUSH(vector<string> &cmd, int client_fd)
     int response = List[key].size();
 
     string reply = ":" + to_string(response) + "\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -231,9 +231,9 @@ void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
     int response = List[key].size();
 
     string reply = ":" + to_string(response) + "\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -252,9 +252,9 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     if (it == List.end())
     {
         const char *emptyArray = "*0\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(emptyArray);
+            clients[client_fd].replyQueue.push_back(emptyArray);
         }
         else
         {
@@ -277,9 +277,9 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     if (start > stop || items.empty())
     {
         const char *emptyArray = "*0\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(emptyArray);
+            clients[client_fd].replyQueue.push_back(emptyArray);
         }
         else
         {
@@ -302,9 +302,9 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
         reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
     }
 
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -328,9 +328,9 @@ void ListStorage::handleLLEN(vector<string> &cmd, int client_fd)
         length = it->second.size();
     }
     string reply = ":" + to_string(length) + "\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -364,9 +364,9 @@ void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
             reply += "$" + to_string(val.size()) + "\r\n" + val + "\r\n";
         }
 
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -382,9 +382,9 @@ void ListStorage::handleLPOP(vector<string> &cmd, int client_fd)
     }
 
     string reply = "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -416,9 +416,9 @@ void ListStorage::handleBLPOP(vector<string> &cmd, int client_fd)
         reply += "$" + to_string(key.size()) + "\r\n" + key + "\r\n";
         reply += "$" + to_string(result.size()) + "\r\n" + result + "\r\n";
 
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -428,9 +428,9 @@ void ListStorage::handleBLPOP(vector<string> &cmd, int client_fd)
     else
     {
         const char *timeoutReply = "*-1\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(timeoutReply);
+            clients[client_fd].replyQueue.push_back(timeoutReply);
         }
         else
         {
@@ -460,9 +460,9 @@ void ListStorage::handleTYPE(vector<string> &cmd, int client_fd)
         result = "none";
 
     string reply = "+" + result + "\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -490,9 +490,9 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
     if (ID == "0-0")
     {
         string reply = "-ERR The ID specified in XADD must be greater than 0-0\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -514,9 +514,9 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
         }
         cv.notify_all();
         string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -560,9 +560,9 @@ void ListStorage::handleXADD(vector<string> &cmd, int client_fd)
             }
             cv.notify_all();
             string reply = "$" + to_string(ID.size()) + "\r\n" + ID + "\r\n";
-            if (ExecutingTransaction)
+            if (clients[client_fd].executingTransaction)
             {
-                replyQueue.push_back(reply);
+                clients[client_fd].replyQueue.push_back(reply);
             }
             else
             {
@@ -623,9 +623,9 @@ void ListStorage::handleXRANGE(vector<string> &cmd, int client_fd)
 
     if (it == Streams.end())
     {
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back("*0\r\n");
+            clients[client_fd].replyQueue.push_back("*0\r\n");
         }
         else
         {
@@ -682,9 +682,9 @@ void ListStorage::handleXRANGE(vector<string> &cmd, int client_fd)
         }
     }
 
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -733,9 +733,9 @@ void ListStorage::handleXREAD(vector<string> &cmd, int client_fd)
         }
     }
 
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -827,9 +827,9 @@ void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
     {
         cv.wait(lock, predicate);
         string reply = buildReply();
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -842,9 +842,9 @@ void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
         if (found)
         {
             string reply = buildReply();
-            if (ExecutingTransaction)
+            if (clients[client_fd].executingTransaction)
             {
-                replyQueue.push_back(reply);
+                clients[client_fd].replyQueue.push_back(reply);
             }
             else
             {
@@ -854,9 +854,9 @@ void ListStorage::handleXREAD_BLOCK(vector<string> &cmd, int client_fd)
         else
         {
             const char *timeoutReply = "*-1\r\n";
-            if (ExecutingTransaction)
+            if (clients[client_fd].executingTransaction)
             {
-                replyQueue.push_back(timeoutReply);
+                clients[client_fd].replyQueue.push_back(timeoutReply);
             }
             else
             {
@@ -875,9 +875,9 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
     {
         Database[Key] = "1";
         string reply = ":1\r\n";
-        if (ExecutingTransaction)
+        if (clients[client_fd].executingTransaction)
         {
-            replyQueue.push_back(reply);
+            clients[client_fd].replyQueue.push_back(reply);
         }
         else
         {
@@ -892,9 +892,9 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
             v++;
             it->second = to_string(v);
             string reply = ":" + it->second + "\r\n";
-            if (ExecutingTransaction)
+            if (clients[client_fd].executingTransaction)
             {
-                replyQueue.push_back(reply);
+                clients[client_fd].replyQueue.push_back(reply);
             }
             else
             {
@@ -904,9 +904,9 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
         else
         {
             string reply = "-ERR value is not an integer or out of range\r\n";
-            if (ExecutingTransaction)
+            if (clients[client_fd].executingTransaction)
             {
-                replyQueue.push_back(reply);
+                clients[client_fd].replyQueue.push_back(reply);
             }
             else
             {
@@ -918,11 +918,11 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
 {
-    Q.push_back(cmd);
+    clients[client_fd].queue.push_back(cmd);
     const char *reply = "+QUEUED\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -932,11 +932,11 @@ void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
 {
-    Multi = true;
+    clients[client_fd].multi = true;
     const char *reply = "+OK\r\n";
-    if (ExecutingTransaction)
+    if (clients[client_fd].executingTransaction)
     {
-        replyQueue.push_back(reply);
+        clients[client_fd].replyQueue.push_back(reply);
     }
     else
     {
@@ -946,25 +946,25 @@ void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 {
-    Multi = false;
-    ExecutingTransaction = true;
+    clients[client_fd].multi = false;
+    clients[client_fd].executingTransaction = true;
     
 
-    for (auto &command : Q)
+    for (auto &command : clients[client_fd].queue)
     {
         dispatch(command, client_fd);
     }
 
-    ExecutingTransaction = false;
+    clients[client_fd].executingTransaction = false;
 
-    string reply = "*" + to_string(replyQueue.size()) + "\r\n";
+    string reply = "*" + to_string(clients[client_fd].replyQueue.size()) + "\r\n";
 
-    for (auto &r : replyQueue)
+    for (auto &r : clients[client_fd].replyQueue)
     {
         reply += r;
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-    replyQueue.clear();
-    Q.clear();
+    clients[client_fd].replyQueue.clear();
+    clients[client_fd].queue.clear();
 }

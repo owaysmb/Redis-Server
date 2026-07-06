@@ -21,6 +21,18 @@
 
 using namespace std;
 
+struct ClientState
+{
+    bool multi = false;
+    vector<vector<string>> queue;
+    int execCounts = 0;
+    vector<string> replyQueue;
+    bool executingTransaction = false;
+};
+
+extern unordered_map<int, ClientState> clients;
+extern mutex clientsMutex;
+
 bool isNumber(const string &str);
 
 class ListStorage
@@ -32,12 +44,6 @@ private:
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
     condition_variable cv;
-    vector<vector<string>> Q;
-    int ExecCounts = 0;
-    bool Multi = false;
-    string replyBuffer;
-    vector<string> replyQueue;
-    bool ExecutingTransaction = false;
 
 public:
     void handlePing(vector<string> &cmd, int client_fd);
