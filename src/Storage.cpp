@@ -106,10 +106,7 @@ void ListStorage::handleEcho(vector<string> &cmd, int client_fd)
     if (cmd.size() > 1)
     {
         string reply = "$" + to_string(cmd[1].size()) + "\r\n" + cmd[1] + "\r\n";
-        if (capturing)
-            ExecResponses.push_back(reply);
-        else
-            send(client_fd, reply.c_str(), reply.size(), 0);
+        sendReply(reply, client_fd);
     }
 }
 
@@ -138,10 +135,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
 
     Database[cmd[1]] = cmd[2];
     const char *response = "+OK\r\n";
-    if (capturing)
-        ExecResponses.push_back(response);
-    else
-        send(client_fd, response, strlen(response), 0);
+    sendReply(response, client_fd);
 }
 
 void ListStorage::handleGET(vector<string> &cmd, int client_fd)
@@ -162,16 +156,12 @@ void ListStorage::handleGET(vector<string> &cmd, int client_fd)
     {
         string value = it->second;
         string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
-        if (capturing)
-            ExecResponses.push_back(reply);
+        sendReply(reply, client_fd);
     }
     else
     {
         const char *nullReply = "$-1\r\n";
-        send(client_fd, nullReply, strlen(nullReply), 0);
-        if (capturing)
-            ExecResponses.push_back(nullReply);
+        sendReply(nullReply, client_fd);
     }
 }
 
@@ -233,10 +223,7 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     if (it == List.end())
     {
         const char *emptyArray = "*0\r\n";
-        if (capturing)
-            ExecResponses.push_back(emptyArray);
-        else
-            send(client_fd, emptyArray, strlen(emptyArray), 0);
+        sendReply(emptyArray, client_fd);
         return;
     }
 
@@ -254,10 +241,7 @@ void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
     if (start > stop || items.empty())
     {
         const char *emptyArray = "*0\r\n";
-        if (capturing)
-            ExecResponses.push_back(emptyArray);
-        else
-            send(client_fd, emptyArray, strlen(emptyArray), 0);
+        sendReply(emptyArray, client_fd);
         return;
     }
     if (start < 0)
