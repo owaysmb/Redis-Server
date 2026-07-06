@@ -1004,5 +1004,13 @@ void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd){
 }
 
 
+void ListStorage::handleWATCH(vector<string> &cmd, int client_fd){
+    
+    if(cmd.size() < 2)
+        return;
 
+    string reply = "+OK\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+
+}
 

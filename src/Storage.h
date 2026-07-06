@@ -28,7 +28,6 @@ struct ClientState
     int execCounts = 0;
     vector<string> replyQueue;
     bool executingTransaction = false;
-    bool DiscardingTransaction = false;
 };
 
 extern unordered_map<int, ClientState> clients;
@@ -68,4 +67,5 @@ public:
     void handleMULTI(vector<string> &cmd, int client_fd);
     void handleEXEC(vector<string> &cmd, int client_fd);
     void handleDISCARD(vector<string> &cmd, int client_fd);
+    void handleWATCH(vector<string> &cmd, int client_fd);
 };
