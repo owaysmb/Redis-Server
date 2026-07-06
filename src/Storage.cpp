@@ -948,7 +948,7 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 {
     Multi = false;
     ExecutingTransaction = true;
-    replyQueue.clear();
+    
 
     for (auto &command : Q)
     {
@@ -965,6 +965,6 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     }
 
     send(client_fd, reply.c_str(), reply.size(), 0);
-
+    replyQueue.clear();
     Q.clear();
 }
