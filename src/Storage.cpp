@@ -35,7 +35,7 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     if (cmd.empty())
         return;
 
-    if (Multi && cmd[0] != "EXEC" && cmd[0] != "MULTI")
+    if (Multi[client_fd] && cmd[0] != "EXEC" && cmd[0] != "MULTI")
     {
         handleQueuing(cmd, client_fd);
         return;
@@ -87,16 +87,18 @@ void ListStorage::handlePing(vector<string> &cmd, int client_fd)
 
 void ListStorage::sendReply(const string &reply, int client_fd)
 {
-    if (capturing)
-        ExecResponses.push_back(reply);
+    lock_guard<mutex> lock(txMtx);
+    if (capturing[client_fd])
+        ExecResponses[client_fd].push_back(reply);
     else
         send(client_fd, reply.c_str(), reply.size(), 0);
 }
 
 void ListStorage::sendReply(const char *reply, int client_fd)
 {
-    if (capturing)
-        ExecResponses.push_back(string(reply));
+    lock_guard<mutex> lock(txMtx);
+    if (capturing[client_fd])
+        ExecResponses[client_fd].push_back(string(reply));
     else
         send(client_fd, reply, strlen(reply), 0);
 }
@@ -738,65 +740,73 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
 {
-    Q.push_back(cmd);
+    lock_guard<mutex> lock(txMtx);
+    Q[client_fd].push_back(cmd);
     const char *reply = "+QUEUED\r\n";
     sendReply(reply, client_fd);
 }
 
 void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
 {
-    Multi = true;
+    lock_guard<mutex> lock(txMtx);
+    Multi[client_fd] = true;
     const char *reply = "+OK\r\n";
     sendReply(reply, client_fd);
 }
 
 void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 {
-    ExecCounts++;
-    if (!Multi)
+    vector<vector<string>> queuedCommands;
+    bool isMulti;
+    {
+        lock_guard<mutex> lock(txMtx);
+        isMulti = Multi[client_fd];
+        if (isMulti)
+            queuedCommands = move(Q[client_fd]);
+    }
+
+    if (!isMulti)
     {
         string reply = "-ERR EXEC without MULTI\r\n";
         sendReply(reply, client_fd);
+        return;
     }
-    else
+
+    if (queuedCommands.empty())
     {
-        if (Q.empty() && ExecCounts == 1)
-        {
-            string reply = "*0\r\n";
-            sendReply(reply, client_fd);
-        }
-        else if (Q.empty() && ExecCounts > 1)
-        {
-            string reply = "-ERR EXEC without MULTI\r\n";
-            sendReply(reply, client_fd);
-        }
-        else
-        {
-            bool previousMulti = Multi;
-            Multi = false;
-            capturing = true;
-            ExecResponses.clear();
-
-            for (auto &instruction : Q)
-            {
-                dispatch(instruction, client_fd);
-            }
-
-            capturing = false;
-            Multi = previousMulti;
-
-            string finalReply = "*" + to_string(ExecResponses.size()) + "\r\n";
-            for (auto &r : ExecResponses)
-            {
-                finalReply += r;
-            }
-
-            sendReply(finalReply, client_fd);
-            Q.clear();
-            Multi = false;
-        }
+        string reply = "*0\r\n";
+        sendReply(reply, client_fd);
+        lock_guard<mutex> lock(txMtx);
+        Multi[client_fd] = false;
+        Q[client_fd].clear();
+        return;
     }
 
-    Q.clear();
-    Multi = false;
+    {
+        lock_guard<mutex> lock(txMtx);
+        capturing[client_fd] = true;
+        ExecResponses[client_fd].clear();
+    }
+
+    for (auto &instruction : queuedCommands)
+    {
+        dispatch(instruction, client_fd);
+    }
+
+    vector<string> responses;
+    {
+        lock_guard<mutex> lock(txMtx);
+        capturing[client_fd] = false;
+        responses = move(ExecResponses[client_fd]);
+        Multi[client_fd] = false;
+        Q[client_fd].clear();
+    }
+
+    string finalReply = "*" + to_string(responses.size()) + "\r\n";
+    for (auto &r : responses)
+    {
+        finalReply += r;
+    }
+
+    sendReply(finalReply, client_fd);
 }

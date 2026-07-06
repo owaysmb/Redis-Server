@@ -31,13 +31,13 @@ private:
     unordered_map<string, vector<string>> List;
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
+    mutex txMtx;
     condition_variable cv;
-    vector<vector<string>> Q;
-    vector<string> ExecResponses;
-    int ExecCounts = 0;
-    bool Multi = false;
+    unordered_map<int, vector<vector<string>>> Q;
+    unordered_map<int, vector<string>> ExecResponses;
+    unordered_map<int, bool> Multi;
+    unordered_map<int, bool> capturing;
     string replyBuffer;
-    bool capturing = false;
 
 public:
     void handlePing(vector<string> &cmd, int client_fd);
