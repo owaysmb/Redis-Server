@@ -37,6 +37,7 @@ private:
     bool Multi = false;
     string replyBuffer;
     vector<string> replyQueue;
+    bool ExecutingTransaction = false;
 
 public:
     void handlePing(vector<string> &cmd, int client_fd);
