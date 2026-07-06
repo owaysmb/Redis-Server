@@ -1013,8 +1013,8 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
 
     if (clients[client_fd].multi)
     {
-        const char *reply = "-ERR WATCH inside MULTI is not allowed\r\n";
-        send(client_fd, reply, strlen(reply), 0);
+        string reply = "-ERR WATCH inside MULTI is not allowed\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
     }
     else
     {
