@@ -981,3 +981,26 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     clients[client_fd].replyQueue.clear();
     clients[client_fd].queue.clear();
 }
+
+void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd){
+
+    clients[client_fd].multi = false;
+    clients[client_fd].queue.clear();
+    
+    if(clients[client_fd].DiscardingTransaction){
+        clients[client_fd].DiscardingTransaction = false;
+        clients[client_fd].replyQueue.clear();
+        const char *reply = "+OK\r\n";
+        send(client_fd, reply, strlen(reply), 0);
+    }else{
+        const char *reply = "-ERR DISCARD without MULTI\r\n";
+        send(client_fd, reply, strlen(reply), 0);
+    }
+
+
+
+}
+
+
+
+
