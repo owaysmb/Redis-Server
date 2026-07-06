@@ -23,7 +23,8 @@ using namespace std;
 
 bool isNumber(const string &str);
 
-class ListStorage{
+class ListStorage
+{
 private:
     unordered_map<string, chrono::steady_clock::time_point> ExpiryTimes;
     unordered_map<string, string> Database;
@@ -32,13 +33,13 @@ private:
     mutex mtx;
     condition_variable cv;
     vector<vector<string>> Q;
+    vector<string> ExecResponses; 
     int ExecCounts = 0;
     bool Multi = false;
     string replyBuffer;
-    bool capturingMode = false;
-public:
+    bool capturing = false;
 
-    void sendReply(int client_fd, const string &reply);
+public:
     void handlePing(vector<string> &cmd, int client_fd);
     void handleEcho(vector<string> &cmd, int client_fd);
     void handleSET(vector<string> &cmd, int client_fd);
@@ -59,5 +60,4 @@ public:
     void dispatch(vector<string> &cmd, int client_fd);
     void handleMULTI(vector<string> &cmd, int client_fd);
     void handleEXEC(vector<string> &cmd, int client_fd);
-    
 };
