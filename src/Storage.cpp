@@ -79,9 +79,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleINCR(cmd, client_fd);
     else if (cmd[0] == "DISCARD")
         handleDISCARD(cmd, client_fd);
-    else if(cmd[0] == "WATCH")
+    else if (cmd[0] == "WATCH")
         handleWATCH(cmd, client_fd);
-
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -987,49 +986,40 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     clients[client_fd].queue.clear();
 }
 
-void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd){
+void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd)
+{
 
-    
-    if(clients[client_fd].multi){
+    if (clients[client_fd].multi)
+    {
         clients[client_fd].multi = false;
         clients[client_fd].queue.clear();
         clients[client_fd].replyQueue.clear();
         const char *reply = "+OK\r\n";
         send(client_fd, reply, strlen(reply), 0);
-    }else{
+    }
+    else
+    {
         const char *reply = "-ERR DISCARD without MULTI\r\n";
         send(client_fd, reply, strlen(reply), 0);
     }
-
-
-
 }
 
+void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
+{
 
-void ListStorage::handleWATCH(vector<string> &cmd, int client_fd){
-    
-    if(cmd.size() < 2)
+    if (cmd.size() < 2)
         return;
-        string key = cmd[1];
+    string key = cmd[1];
 
-        if(clients[client_fd].multi){
-            string reply = "-ERR WATCH inside MULTI is not allowed\r\n";
-            send(client_fd, reply.c_str(), reply.size(), 0);
-            return;
-        }else{
-
-            if(clients[client_fd].watchedKeys.find(key) != clients[client_fd].watchedKeys.end()){
-                string reply = "+OK\r\n";
-                send(client_fd, reply.c_str(), reply.size(), 0);
-                return;
-            }else{
-                string reply = "-ERR WATCH inside MULTI is not allowed\r\n";
-                send(client_fd, reply.c_str(), reply.size(), 0);
-                return;
-            }
-        }
-        
-    
-
+    if (clients[client_fd].multi)
+    {
+        const char *reply = "-ERR WATCH inside MULTI is not allowed\r\n";
+        send(client_fd, reply, strlen(reply), 0);
+    }
+    else
+    {
+        clients[client_fd].watchedKeys.insert(key);
+        string reply = "+OK\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    }
 }
-
