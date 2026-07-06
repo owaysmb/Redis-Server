@@ -32,6 +32,7 @@ void handleCommand(vector<string> &cmd, int client_fd)
 
 void handleCLient(int client_fd)
 {
+  ListStorage clientStorage;
   char pingBuffer[1024];
   while (true)
   {
@@ -44,8 +45,8 @@ void handleCLient(int client_fd)
     string message(pingBuffer);
 
     vector<string> cmd = RESP_parse(message);
+    clientStorage.dispatch(cmd, client_fd);
 
-    handleCommand(cmd, client_fd);
   }
   close(client_fd);
 }
