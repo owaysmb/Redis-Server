@@ -142,8 +142,10 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
             ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
         }
     }
-
-    Database[cmd[1]] = cmd[2];
+    if(!clients[client_fd].multi){
+        Database[cmd[1]] = cmd[2];
+    }
+    
     const char *response = "+OK\r\n";
     if (clients[client_fd].executingTransaction)
     {
@@ -937,7 +939,6 @@ void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
 {
     clients[client_fd].queue.push_back(cmd);
     const char *reply = "+QUEUED\r\n";
-
     send(client_fd, reply, strlen(reply), 0);
     
 }
