@@ -57,7 +57,7 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handlePing(cmd, client_fd);
     else if (cmd[0] == "ECHO" || cmd[0] == "echo")
         handleEcho(cmd, client_fd);
-    else if (cmd[0] == "SET" && !clients[client_fd].multi)
+    else if (cmd[0] == "SET" || cmd[0] == "set")
         handleSET(cmd, client_fd);
     else if (cmd[0] == "GET" || cmd[0] == "get")
         handleGET(cmd, client_fd);
@@ -144,7 +144,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     }
     
     Database[cmd[1]] = cmd[2];
-
+    
     const char *response = "+OK\r\n";
     if (clients[client_fd].executingTransaction)
     {
@@ -975,6 +975,15 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     clients[client_fd].multi = false;
     clients[client_fd].executingTransaction = true;
 
+    if (clients[client_fd].watchedKeyModified) {
+        send(client_fd, "*-1\r\n", 5, 0);
+        clients[client_fd].queue.clear();
+        clients[client_fd].watchedKeys.clear();
+        clients[client_fd].watchedKeyModified = false;
+        clients[client_fd].multi = false;
+        return;
+    }
+    
     for (auto &command : clients[client_fd].queue)
     {
         dispatch(command, client_fd);
@@ -988,14 +997,7 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     {
         reply += r;
     }
-    if (clients[client_fd].watchedKeyModified) {
-        send(client_fd, "*-1\r\n", 5, 0);
-        clients[client_fd].queue.clear();
-        clients[client_fd].watchedKeys.clear();
-        clients[client_fd].watchedKeyModified = false;
-        clients[client_fd].multi = false;
-        return;
-    }
+    
     send(client_fd, reply.c_str(), reply.size(), 0);
     clients[client_fd].replyQueue.clear();
     clients[client_fd].queue.clear();
