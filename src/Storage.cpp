@@ -153,6 +153,11 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     {
         send(client_fd, response, strlen(response), 0);
     }
+    for (auto &[fd, state] : clients) {
+        if (fd != client_fd && state.watchedKeys.count(cmd[1])) {
+            state.watchedKeyModified = true;
+        }
+    }
 }
 
 void ListStorage::handleGET(vector<string> &cmd, int client_fd)
@@ -988,25 +993,14 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     {
         reply += r;
     }
-    for (auto key : clients[client_fd].watchedKeys)
-    {
-        for (int i = 0; i < clients[client_fd].queue.size(); i++){
-            
-            vector<string> q = split(clients[client_fd].queue[i][i]);
-            if(key == q[1] && q[0] == "SET" ){
-                clients[client_fd].hasWatchedKeys = true;
-                break;
-            }
-        }
-        
-    }
-    
-    if(clients[client_fd].hasWatchedKeys){
-        clients[client_fd].hasWatchedKeys = false;
+    if (clients[client_fd].watchedKeyModified) {
+        send(client_fd, "*-1\r\n", 5, 0);
+        clients[client_fd].queue.clear();
         clients[client_fd].watchedKeys.clear();
-        reply = "-1\r\n";
+        clients[client_fd].watchedKeyModified = false;
+        clients[client_fd].multi = false;
+        return;
     }
-
     send(client_fd, reply.c_str(), reply.size(), 0);
     clients[client_fd].replyQueue.clear();
     clients[client_fd].queue.clear();

@@ -30,7 +30,7 @@ struct ClientState
     vector<string> replyQueue;
     bool executingTransaction = false;
     set<string> watchedKeys;
-    bool hasWatchedKeys = false;
+    bool watchedKeyModified = false;
 };
 
 extern unordered_map<int, ClientState> clients;
@@ -47,7 +47,6 @@ private:
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
     condition_variable cv;
-
 public:
     void handlePing(vector<string> &cmd, int client_fd);
     void handleEcho(vector<string> &cmd, int client_fd);
