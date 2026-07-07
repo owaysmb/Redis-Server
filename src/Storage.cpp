@@ -1015,6 +1015,8 @@ void ListStorage::handleDISCARD(vector<string> &cmd, int client_fd)
         clients[client_fd].multi = false;
         clients[client_fd].queue.clear();
         clients[client_fd].replyQueue.clear();
+        clients[client_fd].watchedKeys.clear();
+        clients[client_fd].watchedKeyModified = false;
         const char *reply = "+OK\r\n";
         send(client_fd, reply, strlen(reply), 0);
     }
