@@ -979,7 +979,7 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
         clients[client_fd].multi = false;
         return;
     }
-    
+
     clients[client_fd].multi = false;
     clients[client_fd].executingTransaction = true;
 
@@ -1027,7 +1027,7 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
 
     if (cmd.size() < 2)
         return;
-    string key = cmd[1];
+    
 
     if (clients[client_fd].multi)
     {
@@ -1036,8 +1036,13 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
     }
     else
     {
-        clients[client_fd].watchedKeys.insert(key);
+        for (int i = 0; i < cmd.size()-1; i++){
+            string key = cmd[i+1];
+            clients[client_fd].watchedKeys.insert(key);
+        }
+        
         string reply = "+OK\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
+        
     }
 }
