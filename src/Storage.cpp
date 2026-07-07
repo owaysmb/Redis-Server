@@ -990,7 +990,7 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     }
     for (auto key : clients[client_fd].watchedKeys)
     {
-        for (int i = 0; i < 3; i++){
+        for (int i = 0; i < clients[client_fd].queue.size(); i++){
             
             vector<string> q = split(clients[client_fd].queue[i][i]);
             if(key == q[1] && q[0] == "SET" ){
