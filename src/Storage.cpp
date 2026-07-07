@@ -1052,9 +1052,6 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
 void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
 {
 
-    if (cmd.size() < 2)
-        return;
-    
     clients[client_fd].watchedKeys.clear();
     clients[client_fd].watchedKeyModified = false;
     string reply = "+OK\r\n";
