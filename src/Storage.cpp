@@ -89,6 +89,9 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleDISCARD(cmd, client_fd);
     else if (cmd[0] == "WATCH")
         handleWATCH(cmd, client_fd);
+    else if(cmd[0] == "UNWATCH")
+        handleUNWATCH(cmd, client_fd);
+
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1040,9 +1043,22 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
             string key = cmd[i+1];
             clients[client_fd].watchedKeys.insert(key);
         }
-        
+
         string reply = "+OK\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
         
     }
+}
+void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
+{
+
+    if (cmd.size() < 2)
+        return;
+    
+    clients[client_fd].watchedKeys.clear();
+    clients[client_fd].watchedKeyModified = false;
+    string reply = "+OK\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+
+   
 }
