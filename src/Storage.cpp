@@ -57,7 +57,7 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handlePing(cmd, client_fd);
     else if (cmd[0] == "ECHO" || cmd[0] == "echo")
         handleEcho(cmd, client_fd);
-    else if (cmd[0] == "SET" || cmd[0] == "set")
+    else if (cmd[0] == "SET" && !clients[client_fd].multi)
         handleSET(cmd, client_fd);
     else if (cmd[0] == "GET" || cmd[0] == "get")
         handleGET(cmd, client_fd);
@@ -144,7 +144,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     }
     
     Database[cmd[1]] = cmd[2];
-    
+
     const char *response = "+OK\r\n";
     if (clients[client_fd].executingTransaction)
     {
