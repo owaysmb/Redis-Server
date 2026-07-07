@@ -142,7 +142,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
             ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
         }
     }
-    if(!clients[client_fd].multi){
+    if(clients[client_fd].multi){
         Database[cmd[1]] = cmd[2];
     }
     
