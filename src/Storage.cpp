@@ -981,6 +981,22 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
         reply += r;
     }
 
+    for (auto &key : clients[client_fd].watchedKeys)
+    {
+        for (int i = 0; i < clients[client_fd].queue.size(); i++){
+            if(key == clients[client_fd].queue[i][1]){
+                clients[client_fd].hasWatchedKeys = true;
+                break;
+            }
+        }
+        
+    }
+    if(clients[client_fd].hasWatchedKeys){
+        clients[client_fd].hasWatchedKeys = false;
+        clients[client_fd].watchedKeys.clear();
+        reply = "-1\r\n";
+    }
+
     send(client_fd, reply.c_str(), reply.size(), 0);
     clients[client_fd].replyQueue.clear();
     clients[client_fd].queue.clear();

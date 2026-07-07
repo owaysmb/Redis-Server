@@ -30,6 +30,7 @@ struct ClientState
     vector<string> replyQueue;
     bool executingTransaction = false;
     set<string> watchedKeys;
+    bool hasWatchedKeys = false;
 };
 
 extern unordered_map<int, ClientState> clients;
