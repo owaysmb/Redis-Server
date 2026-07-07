@@ -971,10 +971,6 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
         }
         return;
     }
-
-    clients[client_fd].multi = false;
-    clients[client_fd].executingTransaction = true;
-
     if (clients[client_fd].watchedKeyModified) {
         send(client_fd, "*-1\r\n", 5, 0);
         clients[client_fd].queue.clear();
@@ -984,6 +980,11 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
         return;
     }
     
+    clients[client_fd].multi = false;
+    clients[client_fd].executingTransaction = true;
+
+    
+
     for (auto &command : clients[client_fd].queue)
     {
         dispatch(command, client_fd);
