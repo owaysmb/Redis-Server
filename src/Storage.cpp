@@ -937,14 +937,9 @@ void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
 {
     clients[client_fd].queue.push_back(cmd);
     const char *reply = "+QUEUED\r\n";
-    if (clients[client_fd].executingTransaction)
-    {
-        clients[client_fd].replyQueue.push_back(reply);
-    }
-    else
-    {
-        send(client_fd, reply, strlen(reply), 0);
-    }
+
+    send(client_fd, reply, strlen(reply), 0);
+    
 }
 
 void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
