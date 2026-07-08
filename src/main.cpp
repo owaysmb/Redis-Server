@@ -62,12 +62,20 @@ void handleCLient(int client_fd)
   }
 }
 
-int main()
+
+int main(int argc, char* argv[])
 {
 
   cout << unitbuf;
   cerr << unitbuf;
+  string port = "6379";
 
+  for (int i = 1; i < argc; i++) {
+      if (string(argv[i]) == "--port" && i + 1 < argc) {
+          port = argv[i + 1];
+          break;
+      }
+  }
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (server_fd < 0)
@@ -83,15 +91,16 @@ int main()
     cerr << "setsockopt failed\n";
     return 1;
   }
-
+  
   struct sockaddr_in server_addr;
+  
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(6379);
+  server_addr.sin_port = htons(stoi(port));
 
   if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
   {
-    cerr << "Failed to bind to port 6379\n";
+    cerr << "Failed to bind to port " << port << "\n";
     return 1;
   }
 

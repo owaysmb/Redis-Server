@@ -29,11 +29,13 @@ bool isNumber(const string &str)
         return false;
     return str.find_first_not_of("0123456789") == std::string::npos;
 }
-vector<string> split(const string& str) {
+vector<string> split(const string &str)
+{
     vector<string> tokens;
     istringstream iss(str);
     string token;
-    while (iss >> token) {
+    while (iss >> token)
+    {
         tokens.push_back(token);
     }
     return tokens;
@@ -89,9 +91,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleDISCARD(cmd, client_fd);
     else if (cmd[0] == "WATCH")
         handleWATCH(cmd, client_fd);
-    else if(cmd[0] == "UNWATCH")
+    else if (cmd[0] == "UNWATCH")
         handleUNWATCH(cmd, client_fd);
-
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -145,9 +146,9 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
             ExpiryTimes[key] = chrono::steady_clock::now() + chrono::milliseconds(millis);
         }
     }
-    
+
     Database[cmd[1]] = cmd[2];
-    
+
     const char *response = "+OK\r\n";
     if (clients[client_fd].executingTransaction)
     {
@@ -157,8 +158,10 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     {
         send(client_fd, response, strlen(response), 0);
     }
-    for (auto &[fd, state] : clients) {
-        if (fd != client_fd && state.watchedKeys.count(cmd[1])) {
+    for (auto &[fd, state] : clients)
+    {
+        if (fd != client_fd && state.watchedKeys.count(cmd[1]))
+        {
             state.watchedKeyModified = true;
         }
     }
@@ -942,7 +945,6 @@ void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
     clients[client_fd].queue.push_back(cmd);
     const char *reply = "+QUEUED\r\n";
     send(client_fd, reply, strlen(reply), 0);
-    
 }
 
 void ListStorage::handleMULTI(vector<string> &cmd, int client_fd)
@@ -974,7 +976,8 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
         }
         return;
     }
-    if (clients[client_fd].watchedKeyModified) {
+    if (clients[client_fd].watchedKeyModified)
+    {
         send(client_fd, "*-1\r\n", 5, 0);
         clients[client_fd].queue.clear();
         clients[client_fd].watchedKeys.clear();
@@ -985,8 +988,6 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
 
     clients[client_fd].multi = false;
     clients[client_fd].executingTransaction = true;
-
-    
 
     for (auto &command : clients[client_fd].queue)
     {
@@ -1001,7 +1002,7 @@ void ListStorage::handleEXEC(vector<string> &cmd, int client_fd)
     {
         reply += r;
     }
-    
+
     send(client_fd, reply.c_str(), reply.size(), 0);
     clients[client_fd].replyQueue.clear();
     clients[client_fd].queue.clear();
@@ -1032,7 +1033,6 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
 
     if (cmd.size() < 2)
         return;
-    
 
     if (clients[client_fd].multi)
     {
@@ -1041,14 +1041,14 @@ void ListStorage::handleWATCH(vector<string> &cmd, int client_fd)
     }
     else
     {
-        for (int i = 0; i < cmd.size()-1; i++){
-            string key = cmd[i+1];
+        for (int i = 0; i < cmd.size() - 1; i++)
+        {
+            string key = cmd[i + 1];
             clients[client_fd].watchedKeys.insert(key);
         }
 
         string reply = "+OK\r\n";
         send(client_fd, reply.c_str(), reply.size(), 0);
-        
     }
 }
 void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
@@ -1058,6 +1058,4 @@ void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
     clients[client_fd].watchedKeyModified = false;
     string reply = "+OK\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
-
-   
 }
