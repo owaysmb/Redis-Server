@@ -1068,6 +1068,6 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
-    string reply = "role:master\r\n";
+    string reply = "$11\r\nrole:master\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
 }
