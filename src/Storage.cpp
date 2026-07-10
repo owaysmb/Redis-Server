@@ -1096,4 +1096,5 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     }
     string reply = "$" + to_string(info.size()) + "\r\n" + info + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
+    handlePing(cmd, client_fd);
 }
