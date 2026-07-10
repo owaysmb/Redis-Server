@@ -22,6 +22,7 @@
 
 using namespace std;
 extern bool isMaster;
+extern vector<map<string, string>> replicaData;
 
 struct ClientState
 {

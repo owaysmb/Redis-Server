@@ -23,7 +23,6 @@
 
 using namespace std;
 
-
 bool isNumber(const string &str)
 {
     if (str.empty())
@@ -94,7 +93,7 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleWATCH(cmd, client_fd);
     else if (cmd[0] == "UNWATCH")
         handleUNWATCH(cmd, client_fd);
-    else if(cmd[0] == "INFO" && cmd[1] == "replication")
+    else if (cmd[0] == "INFO" && cmd[1] == "replication")
         handleInfoReplication(cmd, client_fd);
 }
 
@@ -1069,14 +1068,31 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
-    if(isMaster)
+    map<string, string> TempMap;
+
+    string role = isMaster ? "master" : "slave";
+
+    TempMap["role"] = role;
+    replicaData.push_back(TempMap);
+    TempMap.clear();
+
+    TempMap["master_replid"] = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
+    replicaData.push_back(TempMap);
+    TempMap.clear();
+
+    TempMap["master_repl_offset"] = "0";
+    replicaData.push_back(TempMap);
+
+    string info = "";
+    
+
+    for(int i = 0; i < replicaData.size(); i++)
     {
-        string reply = "$11\r\nrole:master\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
+        for (const auto &[key, value] : replicaData[i])
+        {
+            info += key + ":" + value + "\r\n";
+        }
     }
-    else
-    {
-        string reply = "$10\r\nrole:slave\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
-    }
+    string reply = "$" + to_string(info.size()) + "\r\n" + info + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
 }
