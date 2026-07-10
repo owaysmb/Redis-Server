@@ -31,15 +31,14 @@ struct ClientState
     bool executingTransaction = false;
     set<string> watchedKeys;
     bool watchedKeyModified = false;
+    
 };
 
-class User{
-  
-    public:
-        bool MasteryRole = false;
 
-};
-extern User user;
+
+
+
+
 
 extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
@@ -55,7 +54,9 @@ private:
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
     condition_variable cv;
-public:
+   
+public: 
+    bool MasteryRole = false;
     void handlePing(vector<string> &cmd, int client_fd);
     void handleEcho(vector<string> &cmd, int client_fd);
     void handleSET(vector<string> &cmd, int client_fd);

@@ -27,7 +27,6 @@ unordered_map<int, ClientState> clients;
 mutex clientsMutex;
 
 ListStorage storage;
-User user;
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
     }
 
     if(string(argv[i]) == "--replicaof"){
-      user.MasteryRole = true;
+      storage.MasteryRole = true;
     }
 
 
