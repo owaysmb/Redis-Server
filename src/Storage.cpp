@@ -22,7 +22,7 @@
 #include <queue>
 
 using namespace std;
-User user;
+
 
 bool isNumber(const string &str)
 {
@@ -1062,6 +1062,7 @@ void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
     string reply = "+OK\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
 }
+User user;
 
 void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
 {
@@ -1069,14 +1070,14 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
-    // if(user.MasteryRole)
-    // {
-    //     string reply = "$11\r\nrole:master\r\n";
-    //     send(client_fd, reply.c_str(), reply.size(), 0);
-    // }
-    // else
-    // {
-    //     string reply = "$10\r\nrole:slave\r\n";
-    //     send(client_fd, reply.c_str(), reply.size(), 0);
-    // }
+    if(user.MasteryRole)
+    {
+        string reply = "$11\r\nrole:master\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    }
+    else
+    {
+        string reply = "$10\r\nrole:slave\r\n";
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    }
 }

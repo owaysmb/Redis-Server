@@ -39,6 +39,7 @@ class User{
         bool MasteryRole = false;
 
 };
+extern User user;
 
 extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
