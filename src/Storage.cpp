@@ -1068,6 +1068,7 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
+    vector<map<string, string>> replicaData;
     map<string, string> TempMap;
 
     string role = isMaster ? "master" : "slave";
