@@ -69,6 +69,13 @@ int main(int argc, char *argv[])
   cout << unitbuf;
   cerr << unitbuf;
   string port = "6379";
+  string masterHost = "";
+  string masterPort = "";
+
+  if(argc == 5 ){
+    masterHost = argv[3];
+    masterPort = argv[4];
+  }
 
   for (int i = 1; i < argc; i++)
   {
@@ -81,6 +88,7 @@ int main(int argc, char *argv[])
     }
 
   }
+
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (server_fd < 0)
@@ -101,7 +109,7 @@ int main(int argc, char *argv[])
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(stoi(port));
+  server_addr.sin_port = htons(stoi(masterPort));
 
   if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
   {

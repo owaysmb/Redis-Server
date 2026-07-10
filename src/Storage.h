@@ -76,3 +76,18 @@ public:
     void handleUNWATCH(vector<string> &cmd, int client_fd);
     void handleInfoReplication(vector<string> &cmd, int client_fd);
 };
+
+
+class UserRole{
+    
+    public:
+    string MasterHost;
+    string MasterPort;
+    bool MasteryRole = false;
+    // void handleConnecetion(int client_fd){
+        
+    // }
+
+};
+
+
