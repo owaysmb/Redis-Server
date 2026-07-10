@@ -31,13 +31,8 @@ struct ClientState
     bool executingTransaction = false;
     set<string> watchedKeys;
     bool watchedKeyModified = false;
-    
+    bool MasteryRole = false;
 };
-
-
-
-
-
 
 
 extern unordered_map<int, ClientState> clients;
@@ -56,7 +51,7 @@ private:
     condition_variable cv;
    
 public: 
-    bool MasteryRole = false;
+    
     void handlePing(vector<string> &cmd, int client_fd);
     void handleEcho(vector<string> &cmd, int client_fd);
     void handleSET(vector<string> &cmd, int client_fd);

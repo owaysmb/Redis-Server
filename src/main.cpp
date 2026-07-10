@@ -77,11 +77,6 @@ int main(int argc, char *argv[])
       break;
     }
 
-    if(string(argv[i]) == "--replicaof"){
-      storage.MasteryRole = true;
-    }
-
-
   }
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -130,6 +125,12 @@ int main(int argc, char *argv[])
   while (true)
   {
     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+      for (int i = 1; i < argc; i++)
+      {
+        if(string(argv[i]) == "--replicaof"){
+          clients[client_fd].MasteryRole = true;
+        }
+      }
     thread t(handleCLient, client_fd);
     t.detach();
   }
