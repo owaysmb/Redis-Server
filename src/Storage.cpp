@@ -22,7 +22,7 @@
 #include <queue>
 
 using namespace std;
-// User user;
+User user;
 
 bool isNumber(const string &str)
 {
