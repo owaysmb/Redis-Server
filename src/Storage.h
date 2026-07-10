@@ -21,6 +21,7 @@
 #include <set>
 
 using namespace std;
+extern bool isMaster;
 
 struct ClientState
 {
@@ -31,9 +32,7 @@ struct ClientState
     bool executingTransaction = false;
     set<string> watchedKeys;
     bool watchedKeyModified = false;
-    bool MasteryRole = false;
 };
-
 
 extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
@@ -49,9 +48,8 @@ private:
     map<string, vector<pair<string, map<string, string>>>> Streams;
     mutex mtx;
     condition_variable cv;
-   
-public: 
-    
+
+public:
     void handlePing(vector<string> &cmd, int client_fd);
     void handleEcho(vector<string> &cmd, int client_fd);
     void handleSET(vector<string> &cmd, int client_fd);

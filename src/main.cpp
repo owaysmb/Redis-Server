@@ -27,6 +27,7 @@ unordered_map<int, ClientState> clients;
 mutex clientsMutex;
 
 ListStorage storage;
+bool isMaster = true;
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -75,6 +76,9 @@ int main(int argc, char *argv[])
     {
       port = argv[i + 1];
       break;
+    }
+    if (string(argv[i]) == "--replicaof") {
+        isMaster = false;
     }
 
   }
@@ -125,12 +129,6 @@ int main(int argc, char *argv[])
   while (true)
   {
     int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
-      for (int i = 1; i < argc; i++)
-      {
-        if(string(argv[i]) == "--replicaof"){
-          clients[client_fd].MasteryRole = true;
-        }
-      }
     thread t(handleCLient, client_fd);
     t.detach();
   }
