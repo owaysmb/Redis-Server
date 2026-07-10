@@ -93,6 +93,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleWATCH(cmd, client_fd);
     else if (cmd[0] == "UNWATCH")
         handleUNWATCH(cmd, client_fd);
+    else if(cmd[0] == "INFO" && cmd[1] == "replication")
+        handleInfoReplication(cmd, client_fd);
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1057,5 +1059,15 @@ void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
     clients[client_fd].watchedKeys.clear();
     clients[client_fd].watchedKeyModified = false;
     string reply = "+OK\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+}
+
+void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
+{
+
+    if (cmd.size() < 4)
+        return;
+
+    string reply = "role:master\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
 }

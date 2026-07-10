@@ -71,4 +71,5 @@ public:
     void handleDISCARD(vector<string> &cmd, int client_fd);
     void handleWATCH(vector<string> &cmd, int client_fd);
     void handleUNWATCH(vector<string> &cmd, int client_fd);
+    void handleInfoReplication(vector<string> &cmd, int client_fd);
 };
