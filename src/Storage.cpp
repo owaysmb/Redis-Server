@@ -1069,14 +1069,8 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
-    if(isMaster)
-    {
-        string reply = "$11\r\nrole:master\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
-    }
-    else
-    {
-        string reply = "$10\r\nrole:slave\r\n";
-        send(client_fd, reply.c_str(), reply.size(), 0);
-    }
+    string role = isMaster ? "master" : "slave";
+    string info = "role:" + role + "\r\n";
+    string reply = "$" + to_string(info.size()) + "\r\n" + info + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
 }
