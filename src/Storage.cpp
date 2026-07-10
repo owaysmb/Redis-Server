@@ -1065,7 +1065,7 @@ void ListStorage::handleUNWATCH(vector<string> &cmd, int client_fd)
 void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
 {
 
-    if (cmd.size() < 4)
+    if (cmd.size() < 2)
         return;
 
     string reply = "role:master\r\n";
