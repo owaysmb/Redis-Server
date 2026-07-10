@@ -27,6 +27,7 @@ unordered_map<int, ClientState> clients;
 mutex clientsMutex;
 
 ListStorage storage;
+User user;
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -76,6 +77,12 @@ int main(int argc, char *argv[])
       port = argv[i + 1];
       break;
     }
+
+    if(string(argv[i]) == "--replicaof"){
+      user.MasteryRole = true;
+    }
+
+
   }
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 

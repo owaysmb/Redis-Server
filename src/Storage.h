@@ -33,6 +33,13 @@ struct ClientState
     bool watchedKeyModified = false;
 };
 
+class User{
+  
+    public:
+        bool MasteryRole = false;
+
+};
+
 extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
 
