@@ -72,14 +72,15 @@ int main(int argc, char *argv[])
 
   for (int i = 1; i < argc; i++)
   {
+    if (string(argv[i]) == "--replicaof") {
+        isMaster = false;
+    }
     if (string(argv[i]) == "--port" && i + 1 < argc)
     {
       port = argv[i + 1];
       break;
     }
-    if (string(argv[i]) == "--replicaof") {
-        isMaster = false;
-    }
+    
 
   }
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
