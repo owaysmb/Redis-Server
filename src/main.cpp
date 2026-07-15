@@ -25,7 +25,7 @@ using namespace std;
 
 unordered_map<int, ClientState> clients;
 mutex clientsMutex;
-UserRole userRole;
+
 ListStorage storage;
 bool isMaster = true;
 
@@ -63,80 +63,121 @@ void handleCLient(int client_fd)
   }
 }
 
+void connectToMaster(const string &masterHost, const string &masterPort)
+{
+  int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock_fd < 0)
+  {
+    cerr << "Failed to create socket to master\n";
+    return;
+  }
+
+  struct sockaddr_in master_addr;
+  master_addr.sin_family = AF_INET;
+  master_addr.sin_port = htons(stoi(masterPort));
+
+  struct hostent *he = gethostbyname(masterHost.c_str());
+  if (he == nullptr)
+  {
+    cerr << "Failed to resolve master host: " << masterHost << "\n";
+    close(sock_fd);
+    return;
+  }
+  memcpy(&master_addr.sin_addr, he->h_addr_list[0], he->h_length);
+
+  if (connect(sock_fd, (struct sockaddr *)&master_addr, sizeof(master_addr)) < 0)
+  {
+    cerr << "Failed to connect to master\n";
+    close(sock_fd);
+    return;
+  }
+
+  string ping = "*1\r\n$4\r\nPING\r\n";
+  send(sock_fd, ping.c_str(), ping.size(), 0);
+}
+
 int main(int argc, char *argv[])
 {
 
   cout << unitbuf;
   cerr << unitbuf;
   string port = "6379";
-
-  
+  string masterHost , masterPort;
+  if (argc == 5)
+  {
+    masterHost = argv[3];
+    masterPort = argv[4];
+  }
 
   for (int i = 1; i < argc; i++)
   {
-    
+
     if (string(argv[i]) == "--port" && i + 1 < argc)
     {
       port = argv[i + 1];
-    }else if (string(argv[i]) == "--replicaof") {
-        isMaster = false;
     }
-
-  }
-  
-  int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-  if (server_fd < 0)
-  {
-    cerr << "Failed to create server socket\n";
-    return 1;
+    else if (string(argv[i]) == "--replicaof")
+    {
+      isMaster = false;
+    }
   }
 
-  int reuse = 1;
+  // int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
-  {
-    cerr << "setsockopt failed\n";
-    return 1;
-  }
+  // if (server_fd < 0)
+  // {
+  //   cerr << "Failed to create server socket\n";
+  //   return 1;
+  // }
 
-  struct sockaddr_in server_addr;
+  // int reuse = 1;
 
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(stoi(port));
+  // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+  // {
+  //   cerr << "setsockopt failed\n";
+  //   return 1;
+  // }
 
-  if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
-  {
-    cerr << "Failed to bind to port " << port << "\n";
-    return 1;
-  }
+  // struct sockaddr_in server_addr;
 
-  int connection_backlog = 5;
+  // server_addr.sin_family = AF_INET;
+  // server_addr.sin_addr.s_addr = INADDR_ANY;
+  // server_addr.sin_port = htons(stoi(port));
 
-  if (listen(server_fd, connection_backlog) != 0)
-  {
-    cerr << "listen failed\n";
-    return 1;
-  }
+  // if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0)
+  // {
+  //   cerr << "Failed to bind to port " << port << "\n";
+  //   return 1;
+  // }
 
-  struct sockaddr_in client_addr;
-  int client_addr_len = sizeof(client_addr);
-  cout << "Waiting for a client to connect...\n";
+  // int connection_backlog = 5;
 
-  cout << "Logs from your program will appear here!\n";
+  // if (listen(server_fd, connection_backlog) != 0)
+  // {
+  //   cerr << "listen failed\n";
+  //   return 1;
+  // }
 
-  cout << "Client connected\n";
+  // struct sockaddr_in client_addr;
+  // int client_addr_len = sizeof(client_addr);
+  // cout << "Waiting for a client to connect...\n";
+
+  // cout << "Logs from your program will appear here!\n";
+
+  // cout << "Client connected\n";
 
   while (true)
   {
-    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
-    thread t(handleCLient, client_fd);
-    t.detach();
-    userRole.handleConnecetion(client_fd,argc,argv);
+    // int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_len);
+    // thread t(handleCLient, client_fd);
+    // t.detach();
+    if (!isMaster)
+    {
+      thread(connectToMaster, masterHost, masterPort).detach();
+    }
   }
 
-  close(server_fd);
+  // close(server_fd);
 
   return 0;
 }

@@ -78,19 +78,4 @@ public:
 };
 
 
-class UserRole{
-    
-    public:
-    string MasterHost;
-    string MasterPort;
-    bool MasteryRole = false;
-    void handleConnecetion(int client_fd,int argc, char *argv[]){
-        if(argc == 5 ){
-            MasterHost = argv[3];
-            MasterPort = argv[4];
-        }
-    }
-
-};
-
 
