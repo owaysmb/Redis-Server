@@ -1106,6 +1106,6 @@ void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
     if (cmd.size() < 3)
         return;
 
-    string reply = "+OK\r\n";
-    send(client_fd, reply.c_str(), reply.size(), 0);
+    const char *reply = "+OK\r\n";
+    send(client_fd, reply, strlen(reply), 0);
 }
