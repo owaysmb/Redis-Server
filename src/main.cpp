@@ -62,7 +62,17 @@ void handleCLient(int client_fd)
     clients.erase(client_fd);
   }
 }
-
+string readReply(int sock_fd)
+{
+  char buf[1024];
+  int bytesRead = recv(sock_fd, buf, sizeof(buf) - 1, 0);
+  if (bytesRead <= 0)
+  {
+    return "";
+  }
+  buf[bytesRead] = '\0';
+  return string(buf);
+}
 void connectToMaster(const string &masterHost, const string &masterPort, const string &myPort)
 {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -94,15 +104,16 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
 
   string ping = "*1\r\n$4\r\nPING\r\n";
   send(sock_fd, ping.c_str(), ping.size(), 0);
+   readReply(sock_fd);
 
   string portStr = myPort;
   string replconf1 = "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$" + to_string(portStr.size()) + "\r\n" + portStr + "\r\n";
   send(sock_fd, replconf1.c_str(), replconf1.size(), 0);
-
+  readReply(sock_fd);
 
   string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
   send(sock_fd, replconf2.c_str(), replconf2.size(), 0);
-  
+   readReply(sock_fd);
 
 }
 
