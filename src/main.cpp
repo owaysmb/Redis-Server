@@ -94,6 +94,10 @@ void connectToMaster(const string &masterHost, const string &masterPort)
 
   string ping = "*1\r\n$4\r\nPING\r\n";
   send(sock_fd, ping.c_str(), ping.size(), 0);
+
+  const char *reply = "+OK\r\n";
+  send(sock_fd, reply, strlen(reply), 0);
+
 }
 
 int main(int argc, char *argv[])

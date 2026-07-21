@@ -95,8 +95,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleUNWATCH(cmd, client_fd);
     else if (cmd[0] == "INFO" && cmd[1] == "replication")
         handleInfoReplication(cmd, client_fd);
-    else if(cmd[0] == "REPLCONF")
-        handleREPLCONF(cmd,client_fd);
+    // else if(cmd[0] == "REPLCONF")
+    //     handleREPLCONF(cmd,client_fd);
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1100,12 +1100,12 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     handlePing(cmd, client_fd);
 }
 
-void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
-{
+// void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
+// {
 
-    if (cmd.size() < 2)
-        return;
+//     if (cmd.size() < 3)
+//         return;
 
-    const char *reply = "+OK\r\n";
-    send(client_fd, reply, strlen(reply), 0);
-}
+//     const char *reply = "+OK\r\n";
+//     send(client_fd, reply, strlen(reply), 0);
+// }
