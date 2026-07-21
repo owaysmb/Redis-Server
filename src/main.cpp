@@ -63,7 +63,7 @@ void handleCLient(int client_fd)
   }
 }
 
-void connectToMaster(const string &masterHost, const string &masterPort)
+void connectToMaster(const string &masterHost, const string &masterPort, const string &myPort)
 {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (sock_fd < 0)
@@ -95,6 +95,13 @@ void connectToMaster(const string &masterHost, const string &masterPort)
   string ping = "*1\r\n$4\r\nPING\r\n";
   send(sock_fd, ping.c_str(), ping.size(), 0);
 
+  string portStr = myPort;
+  string replconf1 = "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$" + to_string(portStr.size()) + "\r\n" + portStr + "\r\n";
+  send(sock_fd, replconf1.c_str(), replconf1.size(), 0);
+
+
+  string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
+  send(sock_fd, replconf2.c_str(), replconf2.size(), 0);
   
 
 }
@@ -157,7 +164,7 @@ int main(int argc, char *argv[])
 
   if (!isMaster)
   {
-    thread(connectToMaster, masterHost, masterPort).detach();
+    thread(connectToMaster, masterHost, masterPort,port).detach();
   }
 
   struct sockaddr_in client_addr;
