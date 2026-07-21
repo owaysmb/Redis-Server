@@ -1103,7 +1103,7 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
 void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
 {
 
-    if (cmd.size() < 3)
+    if (cmd.size() < 2)
         return;
 
     const char *reply = "+OK\r\n";
