@@ -1100,12 +1100,9 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     handlePing(cmd, client_fd);
 }
 
-// void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
-// {
+void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
+{
 
-//     if (cmd.size() < 3)
-//         return;
-
-//     const char *reply = "+OK\r\n";
-//     send(client_fd, reply, strlen(reply), 0);
-// }
+    string ok = "+OK\r\n";
+    send(client_fd, ok.c_str(), ok.size(), 0);
+}
