@@ -152,7 +152,6 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  // Do the handshake with the master ONCE, before accepting client connections
   if (!isMaster)
   {
     thread(connectToMaster, masterHost, masterPort).detach();

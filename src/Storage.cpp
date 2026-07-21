@@ -1085,9 +1085,8 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     replicaData.push_back(TempMap);
 
     string info = "";
-    
 
-    for(int i = 0; i < replicaData.size(); i++)
+    for (int i = 0; i < replicaData.size(); i++)
     {
         for (const auto &[key, value] : replicaData[i])
         {
@@ -1097,4 +1096,14 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
     string reply = "$" + to_string(info.size()) + "\r\n" + info + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
     handlePing(cmd, client_fd);
+}
+
+void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
+{
+
+    if (cmd.size() < 3)
+        return;
+
+    string reply = "+OK\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
 }
