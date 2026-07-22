@@ -93,12 +93,12 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleWATCH(cmd, client_fd);
     else if (cmd[0] == "UNWATCH")
         handleUNWATCH(cmd, client_fd);
-    else if (cmd[0] == "INFO" && cmd[1] == "replication" || cmd[0] == "PSYNC")
+    else if (cmd[0] == "INFO" && cmd[1] == "replication")
         handleInfoReplication(cmd, client_fd);
     else if (cmd[0] == "REPLCONF")
         handleREPLCONF(cmd, client_fd);
-    // else if (cmd[0] == "PSYNC")
-    //     handlePSYNC(cmd,client_fd);
+    else if (cmd[0] == "PSYNC")
+        handlePSYNC(cmd,client_fd);
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1108,8 +1108,11 @@ void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
     string ok = "+OK\r\n";
     send(client_fd, ok.c_str(), ok.size(), 0);
 }
-// void handlePSYNC(vector<string> &cmd, int client_fd){
+void handlePSYNC(vector<string> &cmd, int client_fd){
     
-//     string reply = "+FULLRESYNC 8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb 0\r\n";
-//     send(client_fd, reply.c_str(), reply.size(), 0);
-// }
+    string replId = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
+    int offset = 0;
+    string reply = "+FULLRESYNC " + replId + " " + to_string(offset) + "\r\n";
+    send(client_fd, reply.c_str(), reply.size(), 0);
+    
+}
