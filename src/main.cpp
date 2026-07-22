@@ -62,17 +62,32 @@ void handleCLient(int client_fd)
     clients.erase(client_fd);
   }
 }
+
+
 string readReply(int sock_fd)
 {
   char buf[1024];
+  char pingBuffer[1024];
+
   int bytesRead = recv(sock_fd, buf, sizeof(buf) - 1, 0);
   if (bytesRead <= 0)
   {
     return "";
   }
+
+  pingBuffer[bytesRead] = '\0';
+  string message(pingBuffer);
+
+  vector<string> cmd = RESP_parse(message);
+
+  handleCommand(cmd,sock_fd);
+
+
   buf[bytesRead] = '\0';
   return string(buf);
 }
+
+
 void connectToMaster(const string &masterHost, const string &masterPort, const string &myPort)
 {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);

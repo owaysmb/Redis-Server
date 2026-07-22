@@ -95,8 +95,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleUNWATCH(cmd, client_fd);
     else if (cmd[0] == "INFO" && cmd[1] == "replication")
         handleInfoReplication(cmd, client_fd);
-    // else if(cmd[0] == "REPLCONF")
-    //     handleREPLCONF(cmd,client_fd);
+    else if (cmd[0] == "REPLCONF")
+        handleREPLCONF(cmd, client_fd);
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
