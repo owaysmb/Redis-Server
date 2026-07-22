@@ -104,7 +104,7 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
 
   string ping = "*1\r\n$4\r\nPING\r\n";
   send(sock_fd, ping.c_str(), ping.size(), 0);
-   readReply(sock_fd);
+  readReply(sock_fd);
 
   string portStr = myPort;
   string replconf1 = "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$" + to_string(portStr.size()) + "\r\n" + portStr + "\r\n";
@@ -113,7 +113,11 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
 
   string replconf2 = "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n";
   send(sock_fd, replconf2.c_str(), replconf2.size(), 0);
-   readReply(sock_fd);
+  readReply(sock_fd);
+
+  string psync = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n";
+  send(sock_fd, psync.c_str(), psync.size(),0);
+  readReply(sock_fd);
 
 }
 
@@ -175,7 +179,7 @@ int main(int argc, char *argv[])
 
   if (!isMaster)
   {
-    thread(connectToMaster, masterHost, masterPort,port).detach();
+    thread(connectToMaster, masterHost, masterPort, port).detach();
   }
 
   struct sockaddr_in client_addr;
