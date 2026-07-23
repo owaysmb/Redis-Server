@@ -1110,14 +1110,23 @@ void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
 }
 void ListStorage::handlePSYNC(vector<string> &cmd, int client_fd)
 {
-
     string replId = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
     int offset = 0;
     string reply = "+FULLRESYNC " + replId + " " + to_string(offset) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
 
-    string RDB_File = "$<0>\r\n<>";
-    send(client_fd, RDB_File.c_str(), RDB_File.size(), 0);
+    
+    string rdbHex = "524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040ffb04dc4d4f22a6a5f";
 
+    string rdbBytes;
+    for (size_t i = 0; i < rdbHex.size(); i += 2)
+    {
+        string byteStr = rdbHex.substr(i, 2);
+        char byte = (char)strtol(byteStr.c_str(), nullptr, 16);
+        rdbBytes += byte;
+    }
 
+    string header = "$" + to_string(rdbBytes.size()) + "\r\n";
+    send(client_fd, header.c_str(), header.size(), 0);
+    send(client_fd, rdbBytes.data(), rdbBytes.size(), 0); 
 }
