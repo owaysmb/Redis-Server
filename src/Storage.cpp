@@ -1129,5 +1129,4 @@ void ListStorage::handlePSYNC(vector<string> &cmd, int client_fd)
     send(client_fd, header.c_str(), header.size(), 0);
     send(client_fd, rdbBytes.data(), rdbBytes.size(), 0);
 
-    handleSET(cmd, client_fd);
 }
