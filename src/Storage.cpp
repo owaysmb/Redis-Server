@@ -1115,4 +1115,9 @@ void ListStorage::handlePSYNC(vector<string> &cmd, int client_fd)
     int offset = 0;
     string reply = "+FULLRESYNC " + replId + " " + to_string(offset) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
+
+    string RDB_File = "$<length>\r\n<contents>";
+    send(client_fd, RDB_File.c_str(), RDB_File.size(), 0);
+
+
 }
