@@ -134,7 +134,31 @@ string readReply(int sock_fd)
   buf[bytesRead] = '\0';
   return string(buf);
 }
+string readLine(int sock_fd, string &buffer)
+{
+    size_t pos;
+    while ((pos = buffer.find("\r\n")) == string::npos)
+    {
+        char tmp[4096];
+        int n = recv(sock_fd, tmp, sizeof(tmp), 0);
+        if (n <= 0) return "";
+        buffer.append(tmp, n);
+    }
+    string line = buffer.substr(0, pos);
+    buffer.erase(0, pos + 2);
+    return line;
+}
 
+void readExact(int sock_fd, string &buffer, size_t n)
+{
+    while (buffer.size() < n)
+    {
+        char tmp[4096];
+        int r = recv(sock_fd, tmp, sizeof(tmp), 0);
+        if (r <= 0) return;
+        buffer.append(tmp, r);
+    }
+}
 void connectToMaster(const string &masterHost, const string &masterPort, const string &myPort)
 {
   int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -180,23 +204,21 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
   readReply(sock_fd);
 
   string psync = "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n";
-  send(sock_fd, psync.c_str(), psync.size(), 0);
-  readReply(sock_fd);
+send(sock_fd, psync.c_str(), psync.size(), 0);
 
-  string leftover;
-  char recvBuf[4096];
+string leftover; 
 
- string leftover;
+string fullresyncLine = readLine(sock_fd, leftover); 
+
+string rdbHeader = readLine(sock_fd, leftover);     
+int rdbLen = stoi(rdbHeader.substr(1));
+
+readExact(sock_fd, leftover, rdbLen);
+leftover.erase(0, rdbLen);
+
 char recvBuf[4096];
-
 while (true)
 {
-    int bytesReceived = recv(sock_fd, recvBuf, sizeof(recvBuf), 0);
-    if (bytesReceived <= 0)
-        break;
-
-    leftover.append(recvBuf, bytesReceived);
-
     size_t pos = 0;
     while (true)
     {
@@ -205,10 +227,14 @@ while (true)
         if (cmd.empty() && pos == before)
             break;
 
-        handleCommand(cmd,sock_fd); 
+        handleCommand(cmd, sock_fd);
     }
+    leftover = leftover.substr(pos);
 
-    leftover = leftover.substr(pos); 
+    int bytesReceived = recv(sock_fd, recvBuf, sizeof(recvBuf), 0);
+    if (bytesReceived <= 0)
+        break;
+    leftover.append(recvBuf, bytesReceived);
 }
 }
 
