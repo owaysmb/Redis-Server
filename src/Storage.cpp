@@ -208,10 +208,11 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
     {
         clients[client_fd].replyQueue.push_back("+OK\r\n");
     }
-    else
+    else if (client_fd != masterConnectionFd)
     {
         send(client_fd, response, strlen(response), 0);
     }
+
     for (auto &[fd, state] : clients)
     {
         if (fd != client_fd && state.watchedKeys.count(cmd[1]))
