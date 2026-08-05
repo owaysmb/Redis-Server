@@ -23,7 +23,6 @@
 using namespace std;
 extern bool isMaster;
 
-
 struct ClientState
 {
     bool multi = false;
@@ -42,7 +41,7 @@ extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
 
 bool isNumber(const string &str);
-
+extern int masterConnectionFd;
 class ListStorage
 {
 private:
@@ -82,6 +81,3 @@ public:
     void handlePSYNC(vector<string> &cmd, int client_fd);
     void propagateToReplicas(const string &respEncodedCommand);
 };
-
-
-

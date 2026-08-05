@@ -44,7 +44,7 @@ vector<string> split(const string &str)
 string encodeRESPArray(const vector<string> &cmd)
 {
 
-  string fullString = "*" + to_string(cmd.size()) + "\r\n";
+    string fullString = "*" + to_string(cmd.size()) + "\r\n";
 
     for (int i = 0; i < cmd.size(); i++)
     {
@@ -56,41 +56,41 @@ string encodeRESPArray(const vector<string> &cmd)
 vector<string> RESP_parse(const string &message)
 {
 
-  vector<string> result;
-  int pos = 0;
+    vector<string> result;
+    int pos = 0;
 
-  if (message[pos] != '*')
-    return result;
+    if (message[pos] != '*')
+        return result;
 
-  pos++;
-
-  int ElementsN = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
-  pos = message.find("\r\n", pos) + 2;
-
-  for (int i = 0; i < ElementsN; i++)
-  {
-    if (message[pos] != '$')
-      break;
     pos++;
 
-    int newlength = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
+    int ElementsN = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
     pos = message.find("\r\n", pos) + 2;
 
-    string word = message.substr(pos, newlength);
-    result.push_back(word);
+    for (int i = 0; i < ElementsN; i++)
+    {
+        if (message[pos] != '$')
+            break;
+        pos++;
 
-    pos += newlength + 2;
-  }
-  return result;
+        int newlength = stoi(message.substr(pos, message.find("\r\n", pos) - pos));
+        pos = message.find("\r\n", pos) + 2;
+
+        string word = message.substr(pos, newlength);
+        result.push_back(word);
+
+        pos += newlength + 2;
+    }
+    return result;
 }
-
 
 set<int> replicaFds;
 mutex replicasMutex;
+int masterConnectionFd = -1;
 
 void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 {
-    if (cmd.empty())
+    if (cmd.empty() || client_fd == masterConnectionFd)
         return;
 
     if (clients[client_fd].multi && cmd[0] != "EXEC" && cmd[0] != "MULTI" && cmd[0] != "DISCARD" && cmd[0] != "WATCH")

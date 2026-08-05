@@ -114,6 +114,8 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
     return;
   }
 
+  masterConnectionFd = sock_fd;
+
   string ping = "*1\r\n$4\r\nPING\r\n";
   send(sock_fd, ping.c_str(), ping.size(), 0);
   readReply(sock_fd);
@@ -131,25 +133,22 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
   send(sock_fd, psync.c_str(), psync.size(), 0);
   readReply(sock_fd);
 
-    char pingBuffer[1024];
-    
-    while (true){
-      int PingBytesRecieved = recv(sock_fd, pingBuffer, sizeof(pingBuffer), 0);
+  char pingBuffer[1024];
 
-      if (PingBytesRecieved <= 0)
-        break;
+  while (true)
+  {
+    int PingBytesRecieved = recv(sock_fd, pingBuffer, sizeof(pingBuffer), 0);
 
-      pingBuffer[PingBytesRecieved] = '\0';
-      string message(pingBuffer);
+    if (PingBytesRecieved <= 0)
+      break;
 
-      vector<string> cmd = RESP_parse(message);
+    pingBuffer[PingBytesRecieved] = '\0';
+    string message(pingBuffer);
 
-      handleCommand(cmd, sock_fd);
-    }
-  
+    vector<string> cmd = RESP_parse(message);
 
-
-
+    handleCommand(cmd, sock_fd);
+  }
 }
 
 int main(int argc, char *argv[])
