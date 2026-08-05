@@ -134,6 +134,8 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
   send(sock_fd, psync.c_str(), psync.size(),0);
   readReply(sock_fd);
 
+  handleCommand;
+
 }
 
 int main(int argc, char *argv[])
