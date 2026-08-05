@@ -90,7 +90,7 @@ int masterConnectionFd = -1;
 
 void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 {
-    if (cmd.empty() || client_fd == masterConnectionFd)
+    if (cmd.empty())
         return;
 
     if (clients[client_fd].multi && cmd[0] != "EXEC" && cmd[0] != "MULTI" && cmd[0] != "DISCARD" && cmd[0] != "WATCH")
