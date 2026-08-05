@@ -186,27 +186,30 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
   string leftover;
   char recvBuf[4096];
 
-  while (true)
-  {
+ string leftover;
+char recvBuf[4096];
+
+while (true)
+{
     int bytesReceived = recv(sock_fd, recvBuf, sizeof(recvBuf), 0);
     if (bytesReceived <= 0)
-      break;
+        break;
 
     leftover.append(recvBuf, bytesReceived);
 
     size_t pos = 0;
     while (true)
     {
-      size_t before = pos;
-      vector<string> cmd = RESP_parse_one(leftover, pos);
-      if (cmd.empty() && pos == before)
-        break;
+        size_t before = pos;
+        vector<string> cmd = RESP_parse_one(leftover, pos);
+        if (cmd.empty() && pos == before)
+            break;
 
-      handleCommand(cmd, sock_fd);
+        handleCommand(cmd,sock_fd); 
     }
 
-    leftover = leftover.substr(pos);
-  }
+    leftover = leftover.substr(pos); 
+}
 }
 
 int main(int argc, char *argv[])

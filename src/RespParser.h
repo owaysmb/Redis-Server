@@ -21,5 +21,5 @@
 #include <queue>
 
 vector<string> RESP_parse(const string &message);
-
 string encodeRESPArray(const vector<string> &cmd);
+vector<string> RESP_parse_one(const string &buf, size_t &pos);
