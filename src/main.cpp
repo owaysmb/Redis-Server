@@ -28,6 +28,56 @@ mutex clientsMutex;
 
 ListStorage storage;
 bool isMaster = true;
+vector<string> RESP_parse_one(const string &buf, size_t &pos)
+{
+  vector<string> result;
+  size_t start = pos;
+
+  if (pos >= buf.size() || buf[pos] != '*')
+    return result;
+
+  size_t p = pos + 1;
+  size_t crlf = buf.find("\r\n", p);
+  if (crlf == string::npos)
+  {
+    pos = start;
+    return {};
+  } // incomplete
+
+  int elementsN = stoi(buf.substr(p, crlf - p));
+  p = crlf + 2;
+
+  for (int i = 0; i < elementsN; i++)
+  {
+    if (p >= buf.size() || buf[p] != '$')
+    {
+      pos = start;
+      return {};
+    } // incomplete
+    p++;
+    crlf = buf.find("\r\n", p);
+    if (crlf == string::npos)
+    {
+      pos = start;
+      return {};
+    } // incomplete
+
+    int len = stoi(buf.substr(p, crlf - p));
+    p = crlf + 2;
+
+    if (p + len + 2 > buf.size())
+    {
+      pos = start;
+      return {};
+    } // incomplete
+
+    result.push_back(buf.substr(p, len));
+    p += len + 2;
+  }
+
+  pos = p; // fully consumed this command
+  return result;
+}
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -133,21 +183,29 @@ void connectToMaster(const string &masterHost, const string &masterPort, const s
   send(sock_fd, psync.c_str(), psync.size(), 0);
   readReply(sock_fd);
 
-  char pingBuffer[1024];
+  string leftover;
+  char recvBuf[4096];
 
   while (true)
   {
-    int PingBytesRecieved = recv(sock_fd, pingBuffer, sizeof(pingBuffer), 0);
-
-    if (PingBytesRecieved <= 0)
+    int bytesReceived = recv(sock_fd, recvBuf, sizeof(recvBuf), 0);
+    if (bytesReceived <= 0)
       break;
 
-    pingBuffer[PingBytesRecieved] = '\0';
-    string message(pingBuffer);
+    leftover.append(recvBuf, bytesReceived);
 
-    vector<string> cmd = RESP_parse(message);
+    size_t pos = 0;
+    while (true)
+    {
+      size_t before = pos;
+      vector<string> cmd = RESP_parse_one(leftover, pos);
+      if (cmd.empty() && pos == before)
+        break;
 
-    handleCommand(cmd, sock_fd);
+      handleCommand(cmd, sock_fd);
+    }
+
+    leftover = leftover.substr(pos);
   }
 }
 
