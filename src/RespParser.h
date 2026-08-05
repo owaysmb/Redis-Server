@@ -20,7 +20,6 @@
 #include <cmath>
 #include <queue>
 
-
 vector<string> RESP_parse(const string &message)
 {
 
@@ -50,4 +49,17 @@ vector<string> RESP_parse(const string &message)
     pos += newlength + 2;
   }
   return result;
+}
+
+string encodeRESPArray(const vector<string> &cmd)
+{
+
+  string fullString = "*" + to_string(cmd.size()) + "\r\n";
+
+    for (int i = 0; i < cmd.size(); i++)
+    {
+        fullString += "$" + to_string(cmd[i].length()) + "\r\n" + cmd[i] + "\r\n";
+    }
+
+    return fullString;
 }

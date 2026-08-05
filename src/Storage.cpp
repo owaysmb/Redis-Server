@@ -1,5 +1,6 @@
 #pragma once
 #include "Storage.h"
+#include "RespParser.h"
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -171,6 +172,7 @@ void ListStorage::handleSET(vector<string> &cmd, int client_fd)
             state.watchedKeyModified = true;
         }
     }
+    propagateToReplicas(encodeRESPArray(cmd));
 }
 
 void ListStorage::handleGET(vector<string> &cmd, int client_fd)
@@ -241,6 +243,7 @@ void ListStorage::handleRPUSH(vector<string> &cmd, int client_fd)
     {
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
+    propagateToReplicas(encodeRESPArray(cmd));
 }
 
 void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
@@ -269,6 +272,7 @@ void ListStorage::handleLPUSH(vector<string> &cmd, int client_fd)
     {
         send(client_fd, reply.c_str(), reply.size(), 0);
     }
+    propagateToReplicas(encodeRESPArray(cmd));
 }
 
 void ListStorage::handleLRANGE(vector<string> &cmd, int client_fd)
@@ -944,6 +948,7 @@ void ListStorage::handleINCR(vector<string> &cmd, int client_fd)
             }
         }
     }
+    propagateToReplicas(encodeRESPArray(cmd));
 }
 
 void ListStorage::handleQueuing(vector<string> &cmd, int client_fd)
@@ -1108,6 +1113,7 @@ void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
     string ok = "+OK\r\n";
     send(client_fd, ok.c_str(), ok.size(), 0);
 }
+
 void ListStorage::handlePSYNC(vector<string> &cmd, int client_fd)
 {
     string replId = "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb";
@@ -1125,8 +1131,22 @@ void ListStorage::handlePSYNC(vector<string> &cmd, int client_fd)
         rdbBytes += byte;
     }
 
+    {
+        lock_guard<mutex> lock(replicasMutex);
+        replicaFds.insert(client_fd);
+    }
+
     string header = "$" + to_string(rdbBytes.size()) + "\r\n";
     send(client_fd, header.c_str(), header.size(), 0);
     send(client_fd, rdbBytes.data(), rdbBytes.size(), 0);
+}
 
+void ListStorage::propagateToReplicas(const string &respEncodedCommand)
+{
+
+    lock_guard<mutex> lock(replicasMutex);
+    for (int fd : replicaFds)
+    {
+        send(fd, respEncodedCommand.c_str(), respEncodedCommand.size(), 0);
+    }
 }

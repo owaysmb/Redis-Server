@@ -35,6 +35,9 @@ struct ClientState
     bool watchedKeyModified = false;
 };
 
+extern set<int> replicaFds;
+extern mutex replicasMutex;
+
 extern unordered_map<int, ClientState> clients;
 extern mutex clientsMutex;
 
@@ -77,6 +80,7 @@ public:
     void handleInfoReplication(vector<string> &cmd, int client_fd);
     void handleREPLCONF(vector<string> &cmd, int client_fd);
     void handlePSYNC(vector<string> &cmd, int client_fd);
+    void propagateToReplicas(const string &respEncodedCommand);
 };
 
 
