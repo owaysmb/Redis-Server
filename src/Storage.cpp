@@ -205,6 +205,9 @@ void ListStorage::handlePing(vector<string> &cmd, int client_fd)
 {
     offsetCounts += 14;
     const char *response = "+PONG\r\n";
+    if (client_fd != masterConnectionFd)
+        return;
+
     if (clients[client_fd].executingTransaction)
     {
         clients[client_fd].replyQueue.push_back("+PONG\r\n");
@@ -1210,12 +1213,12 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
 
 void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
 {
-    
+
     if (cmd.size() > 1 && (cmd[1] == "GETACK" || cmd[1] == "getack"))
     {
-        
+
         string response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n" + to_string(offsetCounts) + "\r\n";
-        send(client_fd, response.c_str() , response.size(), 0);
+        send(client_fd, response.c_str(), response.size(), 0);
         offsetCounts += 37;
         return;
     }
