@@ -1217,7 +1217,7 @@ void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
     if (cmd.size() > 1 && (cmd[1] == "GETACK" || cmd[1] == "getack"))
     {
 
-        string response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n" + to_string(replicationOffset) + "\r\n";
+        string response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$" + to_string(to_string(replicationOffset).size()) + "\r\n" + to_string(replicationOffset) + "\r\n";
         send(client_fd, response.c_str(), response.size(), 0);
 
         return;
