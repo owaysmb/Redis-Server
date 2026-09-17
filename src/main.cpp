@@ -28,57 +28,6 @@ mutex clientsMutex;
 
 ListStorage storage;
 bool isMaster = true;
-vector<string> RESP_parse_one(const string &buf, size_t &pos)
-{
-  vector<string> result;
-  size_t start = pos;
-
-  if (pos >= buf.size() || buf[pos] != '*')
-    return result;
-
-  size_t p = pos + 1;
-  size_t crlf = buf.find("\r\n", p);
-  if (crlf == string::npos)
-  {
-    pos = start;
-    return {};
-  } // incomplete
-
-  int elementsN = stoi(buf.substr(p, crlf - p));
-  p = crlf + 2;
-
-  for (int i = 0; i < elementsN; i++)
-  {
-    if (p >= buf.size() || buf[p] != '$')
-    {
-      pos = start;
-      return {};
-    } // incomplete
-    p++;
-    crlf = buf.find("\r\n", p);
-    if (crlf == string::npos)
-    {
-      pos = start;
-      return {};
-    } // incomplete
-
-    int len = stoi(buf.substr(p, crlf - p));
-    p = crlf + 2;
-
-    if (p + len + 2 > buf.size())
-    {
-      pos = start;
-      return {};
-    } // incomplete
-
-    result.push_back(buf.substr(p, len));
-    p += len + 2;
-  }
-
-  pos = p; // fully consumed this command
-  return result;
-}
-
 void handleCommand(vector<string> &cmd, int client_fd)
 {
   storage.dispatch(cmd, client_fd);
