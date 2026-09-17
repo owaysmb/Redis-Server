@@ -1209,6 +1209,13 @@ void ListStorage::handleInfoReplication(vector<string> &cmd, int client_fd)
 void ListStorage::handleREPLCONF(vector<string> &cmd, int client_fd)
 {
 
+    if (cmd.size() > 1 && (cmd[1] == "GETACK" || cmd[1] == "getack"))
+    {
+        const string response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
+        send(client_fd, response.c_str() , response.size(), 0);
+        return;
+    }
+
     string ok = "+OK\r\n";
     send(client_fd, ok.c_str(), ok.size(), 0);
 }
