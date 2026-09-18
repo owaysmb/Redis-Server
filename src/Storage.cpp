@@ -139,7 +139,7 @@ set<int> replicaFds;
 mutex replicasMutex;
 int masterConnectionFd = -1;
 long long replicationOffset = 0;
-
+int replication_WAIT_offset = 0;
 void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 {
     if (cmd.empty())
@@ -200,7 +200,9 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     else if (cmd[0] == "PSYNC")
         handlePSYNC(cmd, client_fd);
     else if(cmd[0] == "WAIT" || cmd[0] == "wait")
-        handleWAIT(cmd,client_fd);
+        {handleWAIT(cmd,client_fd);
+        replication_WAIT_offset++;}
+        
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1280,6 +1282,9 @@ void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
         send(client_fd, response.c_str() , response.size() , 0);
     }else if(replicaFds.size() > 0){
         string response  = ":" + to_string(replicaFds.size()) + "\r\n";
+        send(client_fd, response.c_str() ,response.size() , 0);
+    }else{
+        string response = ":" + to_string(replication_WAIT_offset) + "\r\n";
         send(client_fd, response.c_str() ,response.size() , 0);
     }
 }
