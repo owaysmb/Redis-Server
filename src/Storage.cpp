@@ -1278,5 +1278,8 @@ void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
     if (replica_num == 0 || replicaFds.size() == 0){
         string response = ":0\r\n";
         send(client_fd, response.c_str() , response.size() , 0);
+    }else if(replicaFds.size() > 0){
+        string response  = ":" + to_string(replicaFds.size()) + "\r\n";
+        send(client_fd, response.c_str() ,response.size() , 0);
     }
 }
