@@ -1276,7 +1276,7 @@ void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
     int timeout = stoi(cmd[2]);
 
     if (replica_num == 0 || replicaFds.size() == 0){
-        string response = "0\r\n";
+        string response = ":0\r\n";
         send(client_fd, response.c_str() , response.size() , 0);
     }
 }
