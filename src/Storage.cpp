@@ -199,6 +199,8 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handleREPLCONF(cmd, client_fd);
     else if (cmd[0] == "PSYNC")
         handlePSYNC(cmd, client_fd);
+    else if(cmd[0] == "WAIT" || cmd[0] == "wait")
+        handleWAIT(cmd,client_fd);
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
@@ -1261,5 +1263,20 @@ void ListStorage::propagateToReplicas(const string &respEncodedCommand)
     for (int fd : replicaFds)
     {
         send(fd, respEncodedCommand.c_str(), respEncodedCommand.size(), 0);
+    }
+}
+
+void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
+{
+
+    if (cmd.size() < 3)
+        return;
+
+    int replica_num = stoi(cmd[1]);
+    int timeout = stoi(cmd[2]);
+
+    if (replica_num == 0 || replicaFds.size() == 0){
+        string response = "0\r\n";
+        send(client_fd, response.c_str() , response.size() , 0);
     }
 }
