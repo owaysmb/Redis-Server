@@ -208,9 +208,9 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
         handlePSYNC(cmd, client_fd);
     else if (cmd[0] == "WAIT" || cmd[0] == "wait")
         handleWAIT(cmd, client_fd);
-    else if(cmd[0] == "CONFIG" || cmd[0] == "config")
-        configGetCommand(cmd,client_fd);
-    else if(cmd[0] == "KEY" || cmd[0] == "key") 
+    else if (cmd[0] == "CONFIG" || cmd[0] == "config")
+        configGetCommand(cmd, client_fd);
+    else if (cmd[0] == "KEYS" || cmd[0] == "keys")
         key_RDB(cmd, client_fd);
 }
 
@@ -1347,23 +1347,27 @@ void ListStorage::configGetCommand(vector<string> &cmd, int client_fd)
     if (value == "dir")
     {
         string response = encodeRESPArray(path);
-        send(client_fd,response.c_str(),response.size() , 0 );
+        send(client_fd, response.c_str(), response.size(), 0);
     }
-    else if (value == "dbfilename"){
+    else if (value == "dbfilename")
+    {
         string response = encodeRESPArray(filename);
-        send(client_fd,response.c_str(),response.size() , 0 );
+        send(client_fd, response.c_str(), response.size(), 0);
     }
 }
 
-void ListStorage::key_RDB(vector<string> &cmd, int client_fd){
+void ListStorage::key_RDB(vector<string> &cmd, int client_fd)
+{
 
-    if(cmd.size() < 2 ) return;
+    if (cmd.size() < 2)
+        return;
 
-    if(cmd[1] == "*"){
-        for (auto [k,v] : Database){
+    if (cmd[1] == "*")
+    {
+        for (auto [k, v] : Database)
+        {
             string response = "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-            send(client_fd,response.c_str() , response.size() , 0);
+            send(client_fd, response.c_str(), response.size(), 0);
         }
     }
-
 }
