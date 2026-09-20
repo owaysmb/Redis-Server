@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <cmath>
 #include <queue>
+#include <fstream>
+#include <ctime>
 
 using namespace std;
 
@@ -1356,18 +1358,209 @@ void ListStorage::configGetCommand(vector<string> &cmd, int client_fd)
     }
 }
 
-void ListStorage::key_RDB(vector<string> &cmd, int client_fd)
+static long long rdbReadLen(const string &data, size_t &p)
 {
 
+    unsigned char b = data[p++];
+
+    if (!(b & 0x40))
+        return b & 0x3F;
+
+    if (!(b & 0x80))
+    {
+        long long len = ((long long)(b & 0x3F) << 8 | (unsigned char)data[p++]);
+        return len;
+    }
+    if (b == 0x80)
+    {
+        long long len = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            len = (len << 8) | ((unsigned char)data[p++]);
+        }
+
+        return len;
+    }
+
+    long long len = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        len = (len << 8) | ((unsigned char)data[p++]);
+    }
+    return len;
+}
+
+static string rdbReadString(const string &data, size_t &p)
+{
+    unsigned char b = data[p];
+
+    if (b == 0xC0)
+    {
+        p++;
+        long long v = (signed char)data[p++];
+        return to_string(v);
+    }
+
+    if (b == 0xC1)
+    {
+        p++;
+        int16_t v = (unsigned char)data[p] | ((unsigned char)data[p + 1] << 8);
+        p += 2;
+        return to_string(v);
+    }
+
+    if (b == 0xC2)
+    {
+        p++;
+        int32_t v = (unsigned char)data[p] | ((unsigned char)data[p + 1] << 8) |
+                    ((unsigned char)data[p + 2] << 16) | ((unsigned char)data[p + 3] << 24);
+        p += 4;
+        return to_string(v);
+    }
+
+    if (b == 0xC3)
+    {
+        p++;
+        long long clen = rdbReadLen(data, p);
+        long long ulen = rdbReadLen(data, p);
+        string out((size_t)ulen, '\0');
+        size_t ip = p;
+        size_t in_end = p + (size_t)clen;
+        size_t op = 0;
+        while (ip < in_end)
+        {
+            unsigned char ctrl = data[ip++];
+            if (ctrl < 32)
+            {
+                size_t len = ctrl + 1;
+                for (size_t i = 0; i < len; i++)
+                    out[op++] = data[ip++];
+            }
+            else
+            {
+                size_t len = ctrl >> 5;
+                long long ref = (long long)op - ((ctrl & 0x1F) << 8) - 1;
+                if (len == 7)
+                    len += (unsigned char)data[ip++];
+                ref -= (unsigned char)data[ip++];
+                len += 2;
+                for (size_t i = 0; i < len; i++)
+                    out[op++] = out[(size_t)ref + i];
+            }
+        }
+        p = in_end;
+        return out;
+    }
+
+    long long len = rdbReadLen(data, p);
+    string s = data.substr(p, (size_t)len);
+    p += (size_t)len;
+    return s;
+}
+
+void ListStorage::key_RDB(vector<string> &cmd, int client_fd)
+{
     if (cmd.size() < 2)
         return;
 
+    vector<string> keys;
     if (cmd[1] == "*")
     {
-        for (auto [k, v] : Database)
+        auto now = chrono::steady_clock::now();
+        for (auto &[k, v] : Database)
         {
-            string response = "$" + to_string(k.size()) + "\r\n" + k + "\r\n";
-            send(client_fd, response.c_str(), response.size(), 0);
+            auto expiryIt = ExpiryTimes.find(k);
+            if (expiryIt != ExpiryTimes.end() && now >= expiryIt->second)
+                continue;
+            keys.push_back(k);
+        }
+    }
+
+    string response = encodeRESPArray(keys);
+    send(client_fd, response.c_str(), response.size(), 0);
+}
+
+void ListStorage::loadRDB()
+{
+    if (path.size() < 2 || filename.size() < 2)
+        return;
+
+    string filePath = path[1] + "/" + filename[1];
+    ifstream file(filePath, ios::binary);
+    if (!file)
+        return;
+
+    stringstream ss;
+    ss << file.rdbuf();
+    string data = ss.str();
+
+    if (data.size() < 9)
+        return;
+
+    size_t p = 9;
+    long long nowMs = (long long)time(nullptr) * 1000;
+    auto base = chrono::steady_clock::now();
+
+    while (p < data.size())
+    {
+        unsigned char b = data[p++];
+        if (b == 0xFF)
+            break;
+        if (b == 0xFE)
+        {
+            rdbReadLen(data, p);
+            continue;
+        }
+        if (b == 0xFB)
+        {
+            rdbReadLen(data, p);
+            rdbReadLen(data, p);
+            continue;
+        }
+        if (b == 0xFA)
+        {
+            rdbReadString(data, p);
+            rdbReadString(data, p);
+            continue;
+        }
+
+        long long expireMs = -1;
+        if (b == 0xFD)
+        {
+            unsigned long long secs = 0;
+            for (int i = 0; i < 4; i++)
+                secs |= (unsigned long long)(unsigned char)data[p + i] << (8 * i);
+            p += 4;
+            expireMs = (long long)secs * 1000;
+        }
+        else if (b == 0xFC)
+        {
+            unsigned long long ms = 0;
+            for (int i = 0; i < 8; i++)
+                ms |= (unsigned long long)(unsigned char)data[p + i] << (8 * i);
+            p += 8;
+            expireMs = (long long)ms;
+        }
+
+        unsigned char vtype = (expireMs >= 0) ? data[p++] : b;
+
+        if (vtype != 0)
+            break;
+
+        string key = rdbReadString(data, p);
+        string value = rdbReadString(data, p);
+
+        if (expireMs >= 0)
+        {
+            auto exp = base + chrono::milliseconds(expireMs - nowMs);
+            if (exp <= base)
+                continue;
+            Database[key] = value;
+            ExpiryTimes[key] = exp;
+        }
+        else
+        {
+            Database[key] = value;
         }
     }
 }

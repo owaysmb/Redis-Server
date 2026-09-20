@@ -83,6 +83,7 @@ public:
     void handleWAIT(vector<string> &cmd, int client_fd);
     void configGetCommand(vector<string> &cmd, int client_fd);
     void key_RDB(vector<string> &cmd, int client_fd);
+    void loadRDB();
 
 
 };

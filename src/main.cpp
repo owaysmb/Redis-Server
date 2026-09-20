@@ -265,6 +265,8 @@ int main(int argc, char *argv[])
     thread(connectToMaster, masterHost, masterPort, port).detach();
   }
 
+  storage.loadRDB();
+
   struct sockaddr_in client_addr;
   int client_addr_len = sizeof(client_addr);
   cout << "Waiting for a client to connect...\n";
