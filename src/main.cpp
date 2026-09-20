@@ -29,6 +29,8 @@ mutex clientsMutex;
 ListStorage storage;
 bool isMaster = true;
 extern long long replicationOffset;
+extern vector<string> path;
+extern vector<string> filename;
 
 void handleCommand(vector<string> &cmd, int client_fd)
 {
@@ -213,6 +215,16 @@ int main(int argc, char *argv[])
       masterHost = replicaofArg.substr(0, spacePos);
       masterPort = replicaofArg.substr(spacePos + 1);
       i++;
+    }
+    else if (string(argv[i]) == "--dir")
+    {
+      path.push_back(argv[i]);
+      path.push_back(argv[i+1]);
+    }
+    else if (string(argv[i]) == "--dbfilename")
+    {
+      filename.push_back(argv[i]);
+      filename.push_back(argv[i+1]);
     }
   }
 

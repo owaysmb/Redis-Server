@@ -81,4 +81,5 @@ public:
     void handlePSYNC(vector<string> &cmd, int client_fd);
     void propagateToReplicas(const string &respEncodedCommand);
     void handleWAIT(vector<string> &cmd, int client_fd);
+    void configGetCommand(vector<string> &cmd, int client_fd);
 };

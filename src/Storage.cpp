@@ -144,6 +144,8 @@ static unordered_map<int, long long> replicaAckOffsets;
 static mutex ackMutex;
 static condition_variable ackCv;
 static atomic<long long> masterWriteOffset{0};
+vector<string> path;
+vector<string> filename;
 
 void ListStorage::dispatch(vector<string> &cmd, int client_fd)
 {
@@ -1288,7 +1290,7 @@ void ListStorage::propagateToReplicas(const string &respEncodedCommand)
 }
 
 void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
-{    
+{
     if (cmd.size() < 3)
         return;
 
@@ -1300,7 +1302,8 @@ void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
     {
         int caught = 0;
         for (auto &[fd, off] : replicaAckOffsets)
-            if (off >= target) caught++;
+            if (off >= target)
+                caught++;
         return caught;
     };
 
@@ -1317,14 +1320,35 @@ void ListStorage::handleWAIT(vector<string> &cmd, int client_fd)
 
     if (replica_num > 0)
     {
-        ackCv.wait_until(lock, deadline, [&]() { return countCaughtUp() >= replica_num; });
+        ackCv.wait_until(lock, deadline, [&]()
+                         { return countCaughtUp() >= replica_num; });
     }
 
     int caught = 0;
     for (auto &[fd, off] : replicaAckOffsets)
-        if (off >= target) caught++;
+        if (off >= target)
+            caught++;
     lock.unlock();
 
     string reply = ":" + to_string(caught) + "\r\n";
     send(client_fd, reply.c_str(), reply.size(), 0);
+}
+
+void ListStorage::configGetCommand(vector<string> &cmd, int client_fd)
+{
+
+    if (cmd.size() < 3)
+        return;
+
+    string value = string(cmd[2]);
+
+    if (value == "dir")
+    {
+        string response = encodeRESPArray(path);
+        send(client_fd,response.c_str(),response.size() , 0 );
+    }
+    else if (value == "dbfilename"){
+        string response = encodeRESPArray(filename);
+        send(client_fd,response.c_str(),response.size() , 0 );
+    }
 }
