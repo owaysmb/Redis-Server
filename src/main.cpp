@@ -218,12 +218,12 @@ int main(int argc, char *argv[])
     }
     else if (string(argv[i]) == "--dir")
     {
-      path.push_back(argv[i]);
+      path.push_back("dir");
       path.push_back(argv[i+1]);
     }
     else if (string(argv[i]) == "--dbfilename")
     {
-      filename.push_back(argv[i]);
+      filename.push_back("dbfilename");
       filename.push_back(argv[i+1]);
     }
   }
