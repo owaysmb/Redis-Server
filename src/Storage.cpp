@@ -207,9 +207,10 @@ void ListStorage::dispatch(vector<string> &cmd, int client_fd)
     else if (cmd[0] == "PSYNC")
         handlePSYNC(cmd, client_fd);
     else if (cmd[0] == "WAIT" || cmd[0] == "wait")
-    {
         handleWAIT(cmd, client_fd);
-    }
+    else if(cmd[0] == "CONFIG" || cmd[0] == "config")
+        configGetCommand(cmd,client_fd);
+    
 }
 
 void ListStorage::handlePing(vector<string> &cmd, int client_fd)
