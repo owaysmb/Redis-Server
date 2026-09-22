@@ -299,49 +299,36 @@ void ListStorage::handleGET(vector<string> &cmd, int client_fd)
     if (cmd.size() < 2)
         return;
 
-    vector<string> keys;
+    string key = cmd[1];
 
-    while(true){
-        string key = cmd[1];
-        auto expiryIt = ExpiryTimes.find(key);
-        if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second)
-        {
-            Database.erase(key);
-            ExpiryTimes.erase(key);
-        }
-
-        auto it = Database.find(key);
-        if (it != Database.end())
-        {
-            string value = it->second;
-            string reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
-            if (clients[client_fd].executingTransaction)
-            {
-                clients[client_fd].replyQueue.push_back(reply);
-            }
-            else
-            {
-                keys.push_back(value);
-                // send(client_fd, reply.c_str(), reply.size(), 0);
-            }
-        }
-        else
-        {
-            const char *nullReply = "$-1\r\n";
-            if (clients[client_fd].executingTransaction)
-            {
-                clients[client_fd].replyQueue.push_back(nullReply);
-            }
-            else
-            {
-                keys.push_back("-1");
-                // send(client_fd, nullReply, strlen(nullReply), 0);
-            }
-        }
+    auto expiryIt = ExpiryTimes.find(key);
+    if (expiryIt != ExpiryTimes.end() && chrono::steady_clock::now() >= expiryIt->second)
+    {
+        Database.erase(key);
+        ExpiryTimes.erase(key);
     }
-    string response = encodeRESPArray(keys);
-    send(client_fd,response.c_str() , response.size() , 0);
-    
+
+    auto it = Database.find(key);
+
+    string reply;
+    if (it != Database.end())
+    {
+        string value = it->second;
+        reply = "$" + to_string(value.size()) + "\r\n" + value + "\r\n";
+    }
+    else
+    {
+        reply = "$-1\r\n";
+    }
+
+    if (clients[client_fd].executingTransaction)
+    {
+        clients[client_fd].replyQueue.push_back(reply);
+    }
+    else
+    {
+        send(client_fd, reply.c_str(), reply.size(), 0);
+    }
 }
 
 void ListStorage::handleRPUSH(vector<string> &cmd, int client_fd)
